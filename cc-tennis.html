@@ -1691,7 +1691,7 @@ const SB_URL = "https://pqduivcxwykcixqsfrwi.supabase.co";
 const SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxZHVpdmN4d3lrY2l4cXNmcndpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM4MDYzODgsImV4cCI6MjA5OTM4MjM4OH0.A-0RuaQYIrn67UpQJrt6RXLLHZ3Cn12H375Ejgy77A8";
 
 /* ============================================================
-   CC ADAPTER SHIM v2026.08.24-1 — COUNTRY CLUB · TENNIS LEG
+   CC ADAPTER SHIM v2026.08.24-2 (players_public + tournament_archive mapped) — COUNTRY CLUB · TENNIS LEG
    This file is a FORK of laptop-otr.html (OTR master). The OTR
    wizard, Live Umpire, guards and screens below run UNMODIFIED.
    This shim intercepts every Supabase call and redirects it:
@@ -1707,10 +1707,11 @@ const SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsIn
   var CC_ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqbWJudmlrcmRnbm9tamh0a2dmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzOTE0MzEsImV4cCI6MjEwMDk2NzQzMX0.vR8xlVFjV6jXW-pAclGjM74HqmWSKVpsacFjM-dCIJI";
   var DISC="tennis";
   // 1 = cc_ twin + discipline filter/injection; 0 = cc_ twin, club-level (no discipline)
-  var TBL={ "matches":1,"players":1,"player_results":1,"doubles_results":1,
-            "tournament_results":1,"tournaments":1,"tournament_entries":1,
-            "tournament_fixtures":1,"club_ladder":1,"club_ladder_state":1,
-            "live_matches":1,"individuals":0,"clubs":0 };
+  var TBL={ "matches":1,"players":1,"players_public":1,"player_results":1,
+            "doubles_results":1,"tournament_results":1,"tournament_archive":1,
+            "tournaments":1,"tournament_entries":1,"tournament_fixtures":1,
+            "club_ladder":1,"club_ladder_state":1,"live_matches":1,
+            "individuals":0,"clubs":0 };
   var FN={ "submit_match":"cc_submit_match","recompute":"cc_recompute_tennis","admin":"cc_admin" };
   var _fetch=window.fetch.bind(window);
   window.fetch=function(input, init){
