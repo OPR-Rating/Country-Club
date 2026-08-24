@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Country Club</title>
 <!--
-  VERSION: CC-FRONTDOOR v2026.08.24-4  (admin PIN GATE — family pattern: PIN alone first; the PIN answers which club you are administering)
+  VERSION: CC-FRONTDOOR v2026.08.24-5  (member PINs removed everywhere — family convention; Seed->Rating labels. Admin gate PIN unchanged.)
   COUNTRY CLUB (CC) · single front door · one club register, three disciplines.
   URL pattern: cc.html?club=1 (one file serves every country club — the header
   reads the club's name from cc_clubs, so "Farland Country Club" is just data).
@@ -196,7 +196,6 @@ function vEnter(m){
   h+='<div class="row"><div><label>Side 1 total '+sub+'</label><input type="number" id="t1g" min="0" inputmode="numeric"></div><div><label>Side 2 total '+sub+'</label><input type="number" id="t2g" min="0" inputmode="numeric"></div></div>';
   h+='<label>Score line (optional, e.g. 6-4, 6-3)</label><input type="text" id="mset">';
   h+='<h3>Submitted by</h3>'+sel("Member","msub",S.members.map(function(x){return x.full_name;}));
-  h+='<label>PIN (member optional · admin code accepted)</label><input type="password" id="mpin">';
   h+='<button class="btn" onclick="submitScore()">Save match</button>';
   h+='<div class="msg" id="emsg"></div></div>';
   m.innerHTML=h;
@@ -235,7 +234,7 @@ function submitScore(){
     var gs=need.map(function(n){ var r=S.members.find(function(x){return x.full_name===n;}); return r?r.gender:""; });
     match.match_type=typeFromGenders(gs);
   }
-  var payload={ club_id:CID, discipline:d, submitter:val("msub"), pin:val("mpin"), match:match };
+  var payload={ club_id:CID, discipline:d, submitter:val("msub"), pin:"", match:match };
   msg.className="msg ok"; msg.textContent="Saving…";
   fn("cc_submit_match",payload).then(function(r){
     if(r&&r.ok){ msg.className="msg ok"; msg.textContent="Match saved — ratings are rebuilding now."; }
@@ -426,18 +425,17 @@ function vAdmin(m){
     +'<label>Full name</label><input type="text" id="aNm">'
     +'<div class="row"><div><label>Gender</label><select id="aG"><option value="M">Male</option><option value="F">Female</option></select></div>'
     +'<div><label>Rating (blank = 1500/1300)</label><input type="number" id="aSeed" placeholder="1500 / 1300"></div></div>'
-    +'<label>4-digit PIN (optional)</label><input type="text" id="aMPin" inputmode="numeric" maxlength="6">'
     +'<button class="btn" onclick="aAddMember()">Register member</button>'
     +'<div class="muted" style="margin-top:6px">Club membership only — no sport affiliation. Partnerships are created automatically the first time two members enter a score together.</div>'
     +'<div class="msg" id="aMsg1"></div></div>';
   h+='<div class="card"><h3>Bulk add members (paste from Excel)</h3>'
-    +'<div class="muted">One member per line: Name, Gender, Rating, PIN (comma or tab separated). Gender M or F required; Rating blank = 1500/1300; PIN optional.</div>'
-    +'<textarea id="aBulk" style="width:100%;min-height:140px;font-family:monospace;font-size:12px;border:1px solid #cfc7b2;border-radius:7px;padding:9px;margin-top:8px" placeholder="John Smith, M, 1350, 1234\nSarah Jones, F, 1180, 5678\nMike Brown\tM\t1420\t9012"></textarea>'
+    +'<div class="muted">One member per line: Name, Gender, Rating (comma or tab separated). Gender M or F required; Rating blank = 1500/1300.</div>'
+    +'<textarea id="aBulk" style="width:100%;min-height:140px;font-family:monospace;font-size:12px;border:1px solid #cfc7b2;border-radius:7px;padding:9px;margin-top:8px" placeholder="John Smith, M, 1350\nSarah Jones, F, 1180\nMike Brown\tM\t1420"></textarea>'
     +'<button class="btn" onclick="aBulkAdd()">Add all pasted members</button>'
     +'<div class="msg" id="aMsgB"></div></div>';
   h+='<div class="card"><h3>Members ('+S.members.length+')</h3><div id="aMembers">';
   if(S.members.length){
-    h+='<table><tr><th>Name</th><th>G</th><th>Seed</th><th>Now</th></tr>';
+    h+='<table><tr><th>Name</th><th>G</th><th>Rating</th><th>Current</th></tr>';
     S.members.forEach(function(r){ h+='<tr><td>'+esc(r.full_name)+'</td><td>'+esc(r.gender||"")+'</td><td>'+(r.seed_rating!=null?Math.round(r.seed_rating):"–")+'</td><td>'+(r.current_rating!=null?Math.round(r.current_rating):"–")+'</td></tr>'; });
     h+='</table>';
   } else h+='<span class="muted">None yet.</span>';
@@ -504,7 +502,7 @@ function aSwitchClub(){
 function aLock(){ S.adminOpen=false; S.adminPin=""; S.adminMaster=false; render(); }
 function aAddMember(){
   var msg=document.getElementById("aMsg1"); msg.className="msg ok"; msg.textContent="Working…";
-  fn("cc_admin",{action:"add_member",club_id:CID,admin_pin:apin(),full_name:val("aNm"),gender:val("aG"),seed_rating:val("aSeed")||null,pin:val("aMPin")}).then(function(r){
+  fn("cc_admin",{action:"add_member",club_id:CID,admin_pin:apin(),full_name:val("aNm"),gender:val("aG"),seed_rating:val("aSeed")||null}).then(function(r){
     if(r&&r.ok){ msg.className="msg ok"; msg.textContent="Registered — enrolled for tennis and squash."; loadRoster().then(render); }
     else { msg.className="msg err"; msg.textContent=(r&&r.error)||"Failed."; }
   });
@@ -518,9 +516,9 @@ function aBulkAdd(){
   lines.forEach(function(ln,i){
     var parts=ln.split(/\t|,/).map(function(p){return p.trim();}).filter(function(p){return p!=="";});
     if(parts.length<2){ errs.push("Line "+(i+1)+": need at least Name, Gender."); return; }
-    var name=parts[0], gender=(parts[1]||"").toUpperCase().charAt(0), rating=parts[2], pin=parts[3];
+    var name=parts[0], gender=(parts[1]||"").toUpperCase().charAt(0), rating=parts[2];
     if(gender!=="M"&&gender!=="F"){ errs.push("Line "+(i+1)+" ("+name+"): gender must be M or F."); return; }
-    rows.push({ full_name:name, gender:gender, rating:rating||null, pin:pin||null });
+    rows.push({ full_name:name, gender:gender, rating:rating||null });
   });
   if(errs.length){ msg.className="msg err"; msg.innerHTML=errs.map(esc).join("<br>"); return; }
   msg.className="msg ok"; msg.textContent="Adding "+rows.length+" members…";
