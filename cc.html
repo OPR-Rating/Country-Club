@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Country Club</title>
+<!--
+  VERSION: CC-FRONTDOOR v2026.08.24-1
+  COUNTRY CLUB (CC) · single front door · one club register, three disciplines.
+  URL pattern: cc.html?club=1 (one file serves every country club — the header
+  reads the club's name from cc_clubs, so "Farland Country Club" is just data).
+  Padel scored by the OPR engine leg, tennis by OTR's, squash by OSR's — via
+  cc_submit_match -> cc_recompute_<discipline>. Reads cc_ tables ONLY.
+  Lives against the OSR Supabase project ADDRESS; OSR itself is never touched.
+  v1 scope: sport picker · score entry · standings · recent matches · unified
+  profile (three-tile honour board) · admin (club/members/pairs/corrections).
+  Ladders and tournaments intentionally excluded from v1.
+-->
+<style>
+:root{
+  --club:#1B3B2F;        /* clubhouse green */
+  --club-deep:#122A21;
+  --linen:#F2EDE0;       /* cream */
+  --linen-2:#E9E1CE;
+  --brass:#C9A44C;       /* brass accent */
+  --ink:#1E2B24;
+  --padel:#6C3483;       /* parent app colours — one club, three engines */
+  --tennis:#2E7D4F;
+  --squash:#A93226;
+  --ok:#2E7D4F; --bad:#A93226;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;background:var(--linen);color:var(--ink);min-height:100vh}
+.serif{font-family:Georgia,'Times New Roman',serif}
+header{background:var(--club);color:var(--linen);padding:18px 16px 14px;text-align:center;border-bottom:3px solid var(--brass)}
+header h1{font-family:Georgia,serif;font-weight:700;font-size:1.45rem;letter-spacing:.5px}
+header .sub{font-size:.72rem;letter-spacing:2.5px;text-transform:uppercase;color:var(--brass);margin-top:3px}
+nav{display:flex;background:var(--club-deep);position:sticky;top:0;z-index:5}
+nav button{flex:1;background:none;border:none;color:#cfd8d2;padding:11px 2px;font-size:.8rem;cursor:pointer;border-bottom:3px solid transparent}
+nav button.on{color:var(--linen);border-bottom-color:var(--brass);font-weight:600}
+main{max-width:640px;margin:0 auto;padding:14px 12px 60px}
+.card{background:#fff;border:1px solid var(--linen-2);border-radius:10px;padding:14px;margin-bottom:12px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+h2{font-family:Georgia,serif;font-size:1.05rem;margin-bottom:10px;color:var(--club)}
+h3{font-size:.9rem;margin:10px 0 6px;color:var(--club)}
+label{display:block;font-size:.75rem;color:#5c6b62;margin:8px 0 3px}
+select,input[type=text],input[type=number],input[type=date],input[type=password]{width:100%;padding:9px;border:1px solid #cfc7b2;border-radius:7px;font-size:.95rem;background:#fff}
+.row{display:flex;gap:8px}.row>*{flex:1}
+button.btn{width:100%;padding:12px;border:none;border-radius:8px;background:var(--club);color:var(--linen);font-size:1rem;font-weight:600;cursor:pointer;margin-top:12px}
+button.btn:disabled{opacity:.5}
+button.mini{padding:6px 10px;border:1px solid #cfc7b2;background:#fff;border-radius:6px;font-size:.78rem;cursor:pointer}
+.sport-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-top:6px}
+.sport-card{border:none;border-radius:12px;padding:20px 16px;color:#fff;cursor:pointer;text-align:left;position:relative;overflow:hidden}
+.sport-card .nm{font-family:Georgia,serif;font-size:1.35rem;font-weight:700}
+.sport-card .eng{font-size:.7rem;letter-spacing:1.5px;text-transform:uppercase;opacity:.85;margin-top:3px}
+.sport-card.padel{background:linear-gradient(135deg,var(--padel),#4A235A)}
+.sport-card.tennis{background:linear-gradient(135deg,var(--tennis),#1D5433)}
+.sport-card.squash{background:linear-gradient(135deg,var(--squash),#78231A)}
+.pill{display:inline-block;padding:2px 9px;border-radius:99px;font-size:.68rem;font-weight:700;letter-spacing:.5px;color:#fff}
+.pill.padel{background:var(--padel)}.pill.tennis{background:var(--tennis)}.pill.squash{background:var(--squash)}
+table{width:100%;border-collapse:collapse;font-size:.82rem}
+th{color:#5c6b62;font-weight:600;text-align:left;padding:6px 4px;border-bottom:2px solid var(--linen-2);font-size:.72rem;text-transform:uppercase;letter-spacing:.5px}
+td{padding:7px 4px;border-bottom:1px solid var(--linen-2)}
+tr.tap{cursor:pointer}tr.tap:active{background:var(--linen)}
+.muted{color:#8a9790;font-size:.78rem}
+.msg{padding:10px;border-radius:8px;font-size:.85rem;margin-top:10px;display:none}
+.msg.ok{display:block;background:#E3EFE7;color:#1D5433}.msg.err{display:block;background:#F5E1DE;color:#78231A}
+.board{display:grid;grid-template-columns:1fr;gap:10px;margin-top:8px}
+.plaque{border-radius:10px;padding:12px 14px;color:#fff;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+.plaque.padel{background:linear-gradient(135deg,var(--padel),#4A235A)}
+.plaque.tennis{background:linear-gradient(135deg,var(--tennis),#1D5433)}
+.plaque.squash{background:linear-gradient(135deg,var(--squash),#78231A)}
+.plaque .d{font-size:.7rem;letter-spacing:1.5px;text-transform:uppercase;opacity:.85}
+.plaque .r{font-family:Georgia,serif;font-size:1.5rem;font-weight:700}
+.plaque .side{text-align:right;font-size:.78rem;line-height:1.5}
+.mv.up{color:#B9E4C4}.mv.dn{color:#F3C1B8}
+.back{background:none;border:none;color:var(--club);font-size:.85rem;cursor:pointer;padding:4px 0;margin-bottom:8px}
+.delta{font-weight:700}.delta.up{color:var(--ok)}.delta.dn{color:var(--bad)}
+.setline{font-size:.74rem;color:#8a9790}
+.gate{margin:8px 0}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="clubName" class="serif">Country Club</h1>
+  <div class="sub">One club · Three disciplines · One rating home</div>
+</header>
+<nav id="nav">
+  <button data-v="home" class="on">Home</button>
+  <button data-v="enter">+ Score</button>
+  <button data-v="stats">Standings</button>
+  <button data-v="profile">Profiles</button>
+  <button data-v="admin">Admin</button>
+</nav>
+<main id="main"></main>
+
+<script>
+"use strict";
+/* ================= CONFIG (CC lives at the OSR project ADDRESS only) ============ */
+var SB_URL="https://djmbnvikrdgnomjhtkgf.supabase.co";
+var SB_ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqbWJudmlrcmRnbm9tamh0a2dmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzOTE0MzEsImV4cCI6MjEwMDk2NzQzMX0.vR8xlVFjV6jXW-pAclGjM74HqmWSKVpsacFjM-dCIJI";
+var CID=(function(){ var m=(location.search||"").match(/[?&]club=(\d+)/); return m?parseInt(m[1],10):1; })();
+var DISCS=["padel","tennis","squash"];
+var DLABEL={padel:"Padel",tennis:"Tennis",squash:"Squash"};
+var DENGINE={padel:"OPR engine",tennis:"OTR engine",squash:"OSR engine"};
+
+/* ================= DATA HELPERS ================= */
+function rest(path){ return fetch(SB_URL+"/rest/v1/"+path,{headers:{apikey:SB_ANON,Authorization:"Bearer "+SB_ANON}}).then(function(r){return r.json();}); }
+function fn(name,body){ return fetch(SB_URL+"/functions/v1/"+name,{method:"POST",headers:{apikey:SB_ANON,Authorization:"Bearer "+SB_ANON,"Content-Type":"application/json"},body:JSON.stringify(body)}).then(function(r){return r.json();}); }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
+function lvl(r){ return (r==null)?"–":(Math.round(r/200*10)/10).toFixed(1); }
+function mv(cur,init){ if(cur==null||init==null)return null; return Math.round(cur-init); }
+function mvHtml(m){ if(m==null)return '<span class="muted">–</span>'; var s=m>=0?"+":""; return '<span class="mv '+(m>=0?"up":"dn")+'">'+s+m+'</span>'; }
+function today(){ var d=new Date(); return d.toISOString().slice(0,10); }
+function typeFromGenders(gs){ var m=0,f=0; gs.forEach(function(g){ if(g==="M")m++; else if(g==="F")f++; }); if(m>0&&f===0)return "Men's"; if(f>0&&m===0)return "Ladies"; return "Mixed"; }
+function pairTypeLabel(g){ return g==="M"?"Men's":(g==="L"?"Ladies":"Mixed"); }
+
+/* ================= STATE ================= */
+var S={view:"home",disc:null,members:[],pairs:[],club:null,profName:null,profDisc:null,adminPin:""};
+
+/* ================= BOOT ================= */
+function boot(){
+  rest("cc_clubs?id=eq."+CID+"&select=id,name").then(function(rows){
+    S.club=(rows&&rows[0])||null;
+    document.getElementById("clubName").textContent=S.club?S.club.name:"Country Club (club "+CID+" not found)";
+  });
+  loadRoster();
+  render();
+}
+function loadRoster(){
+  return Promise.all([
+    rest("cc_individuals?club_id=eq."+CID+"&select=id,full_name,gender,seed_rating,current_rating&order=full_name"),
+    rest("cc_players?club_id=eq."+CID+"&discipline=eq.padel&select=id,name,gender,member_a_id,member_b_id&order=name")
+  ]).then(function(res){ S.members=res[0]||[]; S.pairs=res[1]||[]; });
+}
+document.getElementById("nav").addEventListener("click",function(e){
+  var b=e.target.closest("button"); if(!b)return;
+  S.view=b.getAttribute("data-v"); S.profName=null; S.profDisc=null;
+  Array.prototype.forEach.call(document.querySelectorAll("#nav button"),function(x){x.classList.toggle("on",x===b);});
+  render();
+});
+
+/* ================= RENDER ROUTER ================= */
+function render(){
+  var m=document.getElementById("main");
+  if(S.view==="home")return vHome(m);
+  if(S.view==="enter")return vEnter(m);
+  if(S.view==="stats")return vStats(m);
+  if(S.view==="profile")return vProfile(m);
+  if(S.view==="admin")return vAdmin(m);
+}
+
+/* ================= HOME — the sport picker ================= */
+function vHome(m){
+  var h='<div class="card"><h2>Select your discipline</h2><div class="sport-grid">';
+  DISCS.forEach(function(d){
+    h+='<button class="sport-card '+d+'" onclick="pickSport(\''+d+'\')"><div class="nm">'+DLABEL[d]+'</div><div class="eng">'+DENGINE[d]+' · proven family maths</div></button>';
+  });
+  h+='</div></div>';
+  h+='<div class="card"><div class="muted">Register once, play everything. Every member holds one profile across all three sports — open <b>Profiles</b> to see the honour board.</div></div>';
+  m.innerHTML=h;
+}
+function pickSport(d){ S.disc=d; S.view="enter";
+  Array.prototype.forEach.call(document.querySelectorAll("#nav button"),function(x){x.classList.toggle("on",x.getAttribute("data-v")==="enter");});
+  render();
+}
+
+/* ================= ENTER SCORE ================= */
+function vEnter(m){
+  if(!S.disc){ vHome(m); return; }
+  var d=S.disc;
+  var h='<div class="card"><h2><span class="pill '+d+'">'+DLABEL[d]+'</span> &nbsp;Enter score</h2>';
+  h+='<div class="muted">Scored by the '+DENGINE[d]+' — identical maths to the standalone app.</div>';
+  h+='<div class="row" style="margin-top:8px"><div><label>Date</label><input type="date" id="mdate" value="'+today()+'"></div>';
+  if(d!=="padel"){ h+='<div><label>Format</label><select id="mfmt" onchange="render()"><option value="singles"'+(S.fmt==="doubles"?"":" selected")+'>Singles</option><option value="doubles"'+(S.fmt==="doubles"?" selected":"")+'>Doubles</option></select></div>'; }
+  h+='</div>';
+  if(d==="padel"){
+    h+=sel("Pair 1","p_t1",S.pairs.map(function(p){return p.name;}));
+    h+=sel("Pair 2","p_t2",S.pairs.map(function(p){return p.name;}));
+  } else {
+    var names=S.members.map(function(x){return x.full_name;});
+    var dbl=(S.fmt==="doubles");
+    if(document.getElementById("mfmt")) dbl=(document.getElementById("mfmt").value==="doubles");
+    S.fmt=dbl?"doubles":"singles";
+    if(dbl){
+      h+='<h3>Side 1</h3>'+sel("Player 1","p_t1",names)+sel("Player 2","p_t1b",names);
+      h+='<h3>Side 2</h3>'+sel("Player 1","p_t2",names)+sel("Player 2","p_t2b",names);
+    } else {
+      h+=sel("Player 1","p_t1",names)+sel("Player 2","p_t2",names);
+    }
+  }
+  var unit=(d==="squash")?"Games":"Sets";
+  var sub=(d==="squash")?"Points":"Games";
+  h+='<div class="row"><div><label>Side 1 '+unit+' won</label><input type="number" id="t1s" min="0" inputmode="numeric"></div><div><label>Side 2 '+unit+' won</label><input type="number" id="t2s" min="0" inputmode="numeric"></div></div>';
+  h+='<div class="row"><div><label>Side 1 total '+sub+'</label><input type="number" id="t1g" min="0" inputmode="numeric"></div><div><label>Side 2 total '+sub+'</label><input type="number" id="t2g" min="0" inputmode="numeric"></div></div>';
+  h+='<label>Score line (optional, e.g. 6-4, 6-3)</label><input type="text" id="mset">';
+  h+='<h3>Submitted by</h3>'+sel("Member","msub",S.members.map(function(x){return x.full_name;}));
+  h+='<label>PIN (member optional · admin code accepted)</label><input type="password" id="mpin">';
+  h+='<button class="btn" onclick="submitScore()">Save match</button>';
+  h+='<div class="msg" id="emsg"></div></div>';
+  m.innerHTML=h;
+}
+function sel(lab,id,arr){
+  var h='<label>'+lab+'</label><select id="'+id+'"><option value="">— choose —</option>';
+  arr.forEach(function(n){ h+='<option>'+esc(n)+'</option>'; });
+  return h+'</select>';
+}
+function val(id){ var e=document.getElementById(id); return e?e.value.trim():""; }
+function submitScore(){
+  var d=S.disc, msg=document.getElementById("emsg");
+  msg.className="msg";
+  var t1s=parseInt(val("t1s"),10), t2s=parseInt(val("t2s"),10);
+  var t1g=parseInt(val("t1g"),10), t2g=parseInt(val("t2g"),10);
+  if(isNaN(t1s)||isNaN(t2s)||isNaN(t1g)||isNaN(t2g)){ msg.className="msg err"; msg.textContent="All four score numbers are required."; return; }
+  var match={ match_date:val("mdate"), event:"Social", set_scores:val("mset"),
+    t1_sets:t1s, t2_sets:t2s, t1_games:t1g, t2_games:t2g };
+  if(d==="padel"){
+    var a=val("p_t1"), b=val("p_t2");
+    if(!a||!b||a===b){ msg.className="msg err"; msg.textContent="Choose two different pairs."; return; }
+    var pa=S.pairs.find(function(p){return p.name===a;}), pb=S.pairs.find(function(p){return p.name===b;});
+    match.t1p1=a; match.t1p2=null; match.t2p1=b; match.t2p2=null;
+    match.match_format="doubles";
+    match.match_type=(pa&&pb&&pa.gender===pb.gender)?pairTypeLabel(pa.gender):"Mixed";
+  } else {
+    var dbl=(S.fmt==="doubles");
+    var n1=val("p_t1"), n2=val("p_t2"), n1b=dbl?val("p_t1b"):null, n2b=dbl?val("p_t2b"):null;
+    var need=dbl?[n1,n1b,n2,n2b]:[n1,n2];
+    if(need.some(function(x){return !x;})){ msg.className="msg err"; msg.textContent="Choose all players."; return; }
+    var uniq={}; var dup=false; need.forEach(function(x){ if(uniq[x])dup=true; uniq[x]=1; });
+    if(dup){ msg.className="msg err"; msg.textContent="The same member is selected twice."; return; }
+    match.t1p1=n1; match.t1p2=n1b; match.t2p1=n2; match.t2p2=n2b;
+    match.match_format=dbl?"doubles":"singles";
+    var gs=need.map(function(n){ var r=S.members.find(function(x){return x.full_name===n;}); return r?r.gender:""; });
+    match.match_type=typeFromGenders(gs);
+  }
+  var payload={ club_id:CID, discipline:d, submitter:val("msub"), pin:val("mpin"), match:match };
+  msg.className="msg ok"; msg.textContent="Saving…";
+  fn("cc_submit_match",payload).then(function(r){
+    if(r&&r.ok){ msg.className="msg ok"; msg.textContent="Match saved — ratings are rebuilding now."; }
+    else { msg.className="msg err"; msg.textContent=(r&&r.error)||"Could not save."; }
+  }).catch(function(e){ msg.className="msg err"; msg.textContent=String(e); });
+}
+
+/* ================= STANDINGS + RECENT ================= */
+function vStats(m){
+  if(!S.disc){ vHome(m); return; }
+  var d=S.disc;
+  m.innerHTML='<div class="card"><h2><span class="pill '+d+'">'+DLABEL[d]+'</span> &nbsp;Standings</h2><div id="stTables" class="muted">Loading…</div></div>'
+             +'<div class="card"><h2>Recent matches</h2><div id="stRecent" class="muted">Loading…</div></div>';
+  rest("cc_doubles_results?club_id=eq."+CID+"&discipline=eq."+d+"&select=category,rank,p1,p2,weighted,level,matches,wins,losses,win_pct&order=category,rank").then(function(rows){
+    var el=document.getElementById("stTables");
+    if(!rows||!rows.length){ el.textContent="No rated matches yet — enter the first score and the board comes alive."; return; }
+    var byCat={}; rows.forEach(function(r){ (byCat[r.category]=byCat[r.category]||[]).push(r); });
+    var h="";
+    Object.keys(byCat).sort().forEach(function(c){
+      h+='<h3>'+esc(c)+'</h3><table><tr><th>#</th><th>Entry</th><th>Rating</th><th>Lvl</th><th>P</th><th>W</th><th>L</th><th>Win%</th></tr>';
+      byCat[c].forEach(function(r){
+        var nm=r.p2?(esc(r.p1)+" &amp; "+esc(r.p2)):esc(r.p1);
+        h+='<tr><td>'+r.rank+'</td><td>'+nm+'</td><td><b>'+Math.round(r.weighted)+'</b></td><td>'+r.level+'</td><td>'+r.matches+'</td><td>'+r.wins+'</td><td>'+r.losses+'</td><td>'+(r.win_pct!=null?r.win_pct:"–")+'</td></tr>';
+      });
+      h+='</table>';
+    });
+    el.innerHTML=h;
+  });
+  rest("cc_matches?club_id=eq."+CID+"&discipline=eq."+d+"&select=id,match_date,match_type,t1p1,t1p2,t2p1,t2p2,t1_sets,t2_sets,t1_games,t2_games,set_scores,rating_delta&order=id.desc&limit=25").then(function(rows){
+    var el=document.getElementById("stRecent");
+    if(!rows||!rows.length){ el.textContent="No matches yet."; return; }
+    var h='<table><tr><th>Date</th><th>Match</th><th>Score</th><th>Δ</th></tr>';
+    rows.forEach(function(r){
+      var s1=r.t1p2?(esc(r.t1p1)+" &amp; "+esc(r.t1p2)):esc(r.t1p1);
+      var s2=r.t2p2?(esc(r.t2p1)+" &amp; "+esc(r.t2p2)):esc(r.t2p1);
+      var del=(r.rating_delta!=null)?('<span class="delta '+(r.rating_delta>=0?"up":"dn")+'">'+(r.rating_delta>=0?"+":"")+r.rating_delta+"</span>"):'<span class="muted">…</span>';
+      h+='<tr><td>'+esc(r.match_date||"")+'</td><td>'+s1+'<br><span class="muted">vs</span> '+s2+'</td><td>'+r.t1_sets+"–"+r.t2_sets+'<div class="setline">'+esc(r.set_scores||"")+'</div></td><td>'+del+'</td></tr>';
+    });
+    el.innerHTML=h+'</table>';
+  });
+}
+
+/* ================= PROFILES — the honour board ================= */
+function vProfile(m){
+  if(S.profName&&S.profDisc)return vProfileDisc(m);
+  if(S.profName)return vProfileBoard(m);
+  var h='<div class="card"><h2>Member profiles</h2>';
+  if(!S.members.length){ h+='<div class="muted">No members registered yet — Admin → Register member.</div></div>'; m.innerHTML=h; return; }
+  h+='<table><tr><th>Member</th><th></th></tr>';
+  S.members.forEach(function(r){
+    h+='<tr class="tap" onclick="openProfile(\''+esc(r.full_name).replace(/'/g,"\\'")+'\')"><td>'+esc(r.full_name)+'</td><td class="muted">view ›</td></tr>';
+  });
+  h+='</table></div>';
+  m.innerHTML=h;
+}
+function openProfile(nm){ S.profName=nm; S.profDisc=null; render(); }
+function openDisc(d){ S.profDisc=d; render(); }
+function backToBoard(){ S.profDisc=null; render(); }
+function backToList(){ S.profName=null; S.profDisc=null; render(); }
+
+function vProfileBoard(m){
+  var nm=S.profName;
+  var me=S.members.find(function(x){return x.full_name===nm;})||{};
+  m.innerHTML='<button class="back" onclick="backToList()">‹ All members</button>'
+    +'<div class="card"><h2 class="serif">'+esc(nm)+'</h2><div class="muted">The honour board — one member, three disciplines. Tap a plaque for the full story.</div>'
+    +'<div class="board" id="board">Loading…</div></div>';
+  Promise.all([
+    rest("cc_player_results?club_id=eq."+CID+"&discipline=eq.tennis&name=eq."+encodeURIComponent(nm)+"&select=current_rating,initial_rating"),
+    rest("cc_player_results?club_id=eq."+CID+"&discipline=eq.squash&name=eq."+encodeURIComponent(nm)+"&select=current_rating,initial_rating"),
+    rest("cc_individuals?club_id=eq."+CID+"&select=full_name,current_rating&order=current_rating.desc")
+  ]).then(function(res){
+    var ten=(res[0]&&res[0][0])||null, squ=(res[1]&&res[1][0])||null;
+    var padList=res[2]||[];
+    var padCur=(me.current_rating!=null)?me.current_rating:null;
+    var padMove=mv(padCur, me.seed_rating);
+    var padRank=null; padList.forEach(function(r,i){ if(r.full_name===nm)padRank=i+1; });
+    var rows=[
+      {d:"padel", cur:padCur, move:padMove, rank:padRank, n:padList.length},
+      {d:"tennis", cur:ten?ten.current_rating:null, move:ten?mv(ten.current_rating,ten.initial_rating):null, rank:null, n:null},
+      {d:"squash", cur:squ?squ.current_rating:null, move:squ?mv(squ.current_rating,squ.initial_rating):null, rank:null, n:null}
+    ];
+    // ranks for tennis/squash from their result lists
+    Promise.all([
+      rest("cc_player_results?club_id=eq."+CID+"&discipline=eq.tennis&select=name,current_rating&order=current_rating.desc"),
+      rest("cc_player_results?club_id=eq."+CID+"&discipline=eq.squash&select=name,current_rating&order=current_rating.desc")
+    ]).then(function(rr){
+      [["tennis",rr[0]||[]],["squash",rr[1]||[]]].forEach(function(pair){
+        var d=pair[0], list=pair[1];
+        var row=rows.find(function(x){return x.d===d;});
+        list.forEach(function(r,i){ if(r.name===nm)row.rank=i+1; });
+        row.n=list.length;
+      });
+      var h="";
+      rows.forEach(function(r){
+        var cur=(r.cur!=null)?Math.round(r.cur):"–";
+        var rk=(r.rank!=null)?("rank "+r.rank+" / "+r.n):"unranked";
+        h+='<div class="plaque '+r.d+'" onclick="openDisc(\''+r.d+'\')">'
+          +'<div><div class="d">'+DLABEL[r.d]+'</div><div class="r">'+cur+'</div></div>'
+          +'<div class="side">level '+lvl(r.cur)+'<br>move '+mvHtml(r.move)+'<br>'+rk+' ›</div></div>';
+      });
+      document.getElementById("board").innerHTML=h;
+    });
+  });
+}
+
+function vProfileDisc(m){
+  var nm=S.profName, d=S.profDisc;
+  m.innerHTML='<button class="back" onclick="backToBoard()">‹ '+esc(nm)+'</button>'
+    +'<div class="card"><h2><span class="pill '+d+'">'+DLABEL[d]+'</span> &nbsp;'+esc(nm)+'</h2><div id="pdBody" class="muted">Loading…</div></div>'
+    +'<div class="card"><h3>Recent '+DLABEL[d].toLowerCase()+' matches</h3><div id="pdMatch" class="muted">Loading…</div></div>';
+  var myPairs=S.pairs.filter(function(p){
+    var me=S.members.find(function(x){return x.full_name===nm;});
+    return me&&(p.member_a_id===me.id||p.member_b_id===me.id);
+  }).map(function(p){return p.name;});
+  rest("cc_player_results?club_id=eq."+CID+"&discipline=eq."+d+"&select=name,current_rating,initial_rating,sets_played,sets_won,set_win_pct,game_diff_per_set,form_npi&order=current_rating.desc").then(function(rows){
+    rows=rows||[];
+    var el=document.getElementById("pdBody"); var h="";
+    if(d==="padel"){
+      var me=S.members.find(function(x){return x.full_name===nm;})||{};
+      h+='<table><tr><th></th><th>Rating</th><th>Lvl</th><th>Move</th></tr>';
+      h+='<tr><td>Individual</td><td><b>'+(me.current_rating!=null?Math.round(me.current_rating):"–")+'</b></td><td>'+lvl(me.current_rating)+'</td><td>'+mvHtml(mv(me.current_rating,me.seed_rating))+'</td></tr></table>';
+      var mine=rows.filter(function(r){ return myPairs.indexOf(r.name)>=0; });
+      if(mine.length){
+        h+='<h3>Pairs</h3><table><tr><th>Pair</th><th>Rating</th><th>Move</th><th>Sets</th><th>Win%</th></tr>';
+        mine.forEach(function(r){ h+='<tr><td>'+esc(r.name)+'</td><td><b>'+(r.current_rating!=null?Math.round(r.current_rating):"–")+'</b></td><td>'+mvHtml(mv(r.current_rating,r.initial_rating))+'</td><td>'+(r.sets_played||0)+'</td><td>'+(r.set_win_pct!=null?r.set_win_pct:"–")+'</td></tr>'; });
+        h+='</table>';
+      } else { h+='<div class="muted" style="margin-top:8px">No padel pairs yet — Admin → Form padel pair.</div>'; }
+    } else {
+      var meR=rows.find(function(r){return r.name===nm;});
+      if(!meR){ h='<div class="muted">Enrolled — no rated matches yet.</div>'; }
+      else {
+        h+='<table><tr><th>Rating</th><th>Lvl</th><th>Move</th><th>Sets</th><th>Won</th><th>Win%</th><th>GD/set</th></tr>';
+        h+='<tr><td><b>'+Math.round(meR.current_rating)+'</b></td><td>'+lvl(meR.current_rating)+'</td><td>'+mvHtml(mv(meR.current_rating,meR.initial_rating))+'</td><td>'+(meR.sets_played||0)+'</td><td>'+(meR.sets_won||0)+'</td><td>'+(meR.set_win_pct!=null?meR.set_win_pct:"–")+'</td><td>'+(meR.game_diff_per_set!=null?meR.game_diff_per_set:"–")+'</td></tr></table>';
+      }
+    }
+    el.innerHTML=h;
+  });
+  rest("cc_matches?club_id=eq."+CID+"&discipline=eq."+d+"&select=match_date,t1p1,t1p2,t2p1,t2p2,t1_sets,t2_sets,set_scores,rating_delta&order=id.desc&limit=100").then(function(rows){
+    rows=rows||[];
+    var involved=rows.filter(function(r){
+      var names=[r.t1p1,r.t1p2,r.t2p1,r.t2p2].filter(Boolean);
+      return names.some(function(x){ return x===nm||myPairs.indexOf(x)>=0||String(x).split(" & ").indexOf(nm)>=0; });
+    }).slice(0,15);
+    var el=document.getElementById("pdMatch");
+    if(!involved.length){ el.textContent="No matches yet."; return; }
+    var h='<table><tr><th>Date</th><th>Match</th><th>Score</th><th>Δ</th></tr>';
+    involved.forEach(function(r){
+      var s1=r.t1p2?(esc(r.t1p1)+" &amp; "+esc(r.t1p2)):esc(r.t1p1);
+      var s2=r.t2p2?(esc(r.t2p1)+" &amp; "+esc(r.t2p2)):esc(r.t2p1);
+      var del=(r.rating_delta!=null)?('<span class="delta '+(r.rating_delta>=0?"up":"dn")+'">'+(r.rating_delta>=0?"+":"")+r.rating_delta+"</span>"):'<span class="muted">…</span>';
+      h+='<tr><td>'+esc(r.match_date||"")+'</td><td>'+s1+' <span class="muted">vs</span> '+s2+'</td><td>'+r.t1_sets+"–"+r.t2_sets+'</td><td>'+del+'</td></tr>';
+    });
+    el.innerHTML=h+'</table>';
+  });
+}
+
+/* ================= ADMIN ================= */
+function vAdmin(m){
+  var h='<div class="card"><h2>Admin</h2><div class="gate"><label>Admin PIN (club code, or master)</label><input type="password" id="aPin" value="'+esc(S.adminPin)+'"></div></div>';
+  h+='<div class="card"><h3>Register member</h3>'
+    +'<label>Full name</label><input type="text" id="aNm">'
+    +'<div class="row"><div><label>Gender</label><select id="aG"><option value="M">Male</option><option value="F">Female</option></select></div>'
+    +'<div><label>Seed rating</label><input type="number" id="aSeed" value="1200"></div></div>'
+    +'<button class="btn" onclick="aAddMember()">Register member</button>'
+    +'<div class="muted" style="margin-top:6px">Registers once — auto-enrolled for tennis and squash. Padel plays as pairs, formed below.</div>'
+    +'<div class="msg" id="aMsg1"></div></div>';
+  h+='<div class="card"><h3>Form padel pair</h3>'
+    +sel("Member A (name shown first)","aPa",S.members.map(function(x){return x.full_name;}))
+    +sel("Member B","aPb",S.members.map(function(x){return x.full_name;}))
+    +'<button class="btn" onclick="aAddPair()">Create pair</button>'
+    +'<div class="msg" id="aMsg2"></div></div>';
+  h+='<div class="card"><h3>Members ('+S.members.length+')</h3><div id="aMembers">';
+  if(S.members.length){
+    h+='<table><tr><th>Name</th><th>G</th><th>Seed</th><th>Now</th></tr>';
+    S.members.forEach(function(r){ h+='<tr><td>'+esc(r.full_name)+'</td><td>'+esc(r.gender||"")+'</td><td>'+(r.seed_rating!=null?Math.round(r.seed_rating):"–")+'</td><td>'+(r.current_rating!=null?Math.round(r.current_rating):"–")+'</td></tr>'; });
+    h+='</table>';
+  } else h+='<span class="muted">None yet.</span>';
+  h+='</div><h3 style="margin-top:12px">Padel pairs ('+S.pairs.length+')</h3><div>';
+  if(S.pairs.length){ h+=S.pairs.map(function(p){return esc(p.name);}).join('<br>'); } else h+='<span class="muted">None yet.</span>';
+  h+='</div></div>';
+  h+='<div class="card"><h3>Correct a match</h3>'
+    +'<div class="row"><div>'+sel("Discipline","aDd",["padel","tennis","squash"])+'</div><div><label>&nbsp;</label><button class="mini" style="width:100%;padding:9px" onclick="aLoadMatches()">Load recent</button></div></div>'
+    +'<div id="aMatches" class="muted" style="margin-top:8px"></div><div class="msg" id="aMsg3"></div></div>';
+  h+='<div class="card"><h3>Clubs (master)</h3>'
+    +'<label>New club name</label><input type="text" id="aCn">'
+    +'<label>Its admin PIN</label><input type="text" id="aCp">'
+    +'<button class="btn" onclick="aAddClub()">Create club</button>'
+    +'<div class="msg" id="aMsg4"></div></div>';
+  m.innerHTML=h;
+}
+function apin(){ S.adminPin=val("aPin"); return S.adminPin; }
+function aAddMember(){
+  var msg=document.getElementById("aMsg1"); msg.className="msg ok"; msg.textContent="Working…";
+  fn("cc_admin",{action:"add_member",club_id:CID,admin_pin:apin(),full_name:val("aNm"),gender:val("aG"),seed_rating:val("aSeed")||1200}).then(function(r){
+    if(r&&r.ok){ msg.className="msg ok"; msg.textContent="Registered — enrolled for tennis and squash."; loadRoster().then(render); }
+    else { msg.className="msg err"; msg.textContent=(r&&r.error)||"Failed."; }
+  });
+}
+function aAddPair(){
+  var msg=document.getElementById("aMsg2"); msg.className="msg ok"; msg.textContent="Working…";
+  fn("cc_admin",{action:"add_pair",club_id:CID,admin_pin:apin(),member_a:val("aPa"),member_b:val("aPb")}).then(function(r){
+    if(r&&r.ok){ msg.className="msg ok"; msg.textContent="Pair created: "+r.pair.name; loadRoster().then(render); }
+    else { msg.className="msg err"; msg.textContent=(r&&r.error)||"Failed."; }
+  });
+}
+function aLoadMatches(){
+  var d=val("aDd"); if(!d)return;
+  fn("cc_admin",{action:"list_matches",club_id:CID,discipline:d,limit:20}).then(function(r){
+    var el=document.getElementById("aMatches");
+    var rows=(r&&r.matches)||[];
+    if(!rows.length){ el.textContent="No matches."; return; }
+    var h='<table><tr><th>#</th><th>Match</th><th>Score</th><th></th></tr>';
+    rows.forEach(function(x){
+      var s1=x.t1p2?(esc(x.t1p1)+" &amp; "+esc(x.t1p2)):esc(x.t1p1);
+      var s2=x.t2p2?(esc(x.t2p1)+" &amp; "+esc(x.t2p2)):esc(x.t2p1);
+      h+='<tr><td>'+x.id+'</td><td>'+s1+' <span class="muted">vs</span> '+s2+'</td><td>'+x.t1_sets+"–"+x.t2_sets+'</td><td><button class="mini" onclick="aDelMatch('+x.id+')">Delete</button></td></tr>';
+    });
+    el.innerHTML=h+'</table>';
+  });
+}
+function aDelMatch(id){
+  if(!confirm("Delete match #"+id+"? Ratings rebuild automatically."))return;
+  var msg=document.getElementById("aMsg3"); msg.className="msg ok"; msg.textContent="Deleting…";
+  fn("cc_admin",{action:"delete_match",club_id:CID,admin_pin:apin(),match_id:id}).then(function(r){
+    if(r&&r.ok){ msg.className="msg ok"; msg.textContent="Deleted — "+r.discipline+" ratings rebuilding."; aLoadMatches(); }
+    else { msg.className="msg err"; msg.textContent=(r&&r.error)||"Failed."; }
+  });
+}
+function aAddClub(){
+  var msg=document.getElementById("aMsg4"); msg.className="msg ok"; msg.textContent="Working…";
+  fn("cc_admin",{action:"add_club",admin_pin:apin(),name:val("aCn"),club_admin_pin:val("aCp")}).then(function(r){
+    if(r&&r.ok){ msg.className="msg ok"; msg.textContent="Created club #"+r.club.id+" — open with ?club="+r.club.id; }
+    else { msg.className="msg err"; msg.textContent=(r&&r.error)||"Failed."; }
+  });
+}
+
+boot();
+</script>
+</body>
+</html>
