@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Country Club</title>
 <!--
-  VERSION: CC-FRONTDOOR v2026.08.24-1
+  VERSION: CC-FRONTDOOR v2026.08.24-3  (Rating label + 1500/1300 defaults; bulk add ported from OPR)
   COUNTRY CLUB (CC) · single front door · one club register, three disciplines.
   URL pattern: cc.html?club=1 (one file serves every country club — the header
   reads the club's name from cc_clubs, so "Farland Country Club" is just data).
@@ -174,8 +174,10 @@ function vEnter(m){
   if(d!=="padel"){ h+='<div><label>Format</label><select id="mfmt" onchange="render()"><option value="singles"'+(S.fmt==="doubles"?"":" selected")+'>Singles</option><option value="doubles"'+(S.fmt==="doubles"?" selected":"")+'>Doubles</option></select></div>'; }
   h+='</div>';
   if(d==="padel"){
-    h+=sel("Pair 1","p_t1",S.pairs.map(function(p){return p.name;}));
-    h+=sel("Pair 2","p_t2",S.pairs.map(function(p){return p.name;}));
+    var pnames=S.members.map(function(x){return x.full_name;});
+    h+='<h3>Side 1</h3>'+sel("Player 1","p_t1",pnames)+sel("Player 2","p_t1b",pnames);
+    h+='<h3>Side 2</h3>'+sel("Player 1","p_t2",pnames)+sel("Player 2","p_t2b",pnames);
+    h+='<div class="muted">First time these two play together, the partnership is created automatically.</div>';
   } else {
     var names=S.members.map(function(x){return x.full_name;});
     var dbl=(S.fmt==="doubles");
@@ -214,12 +216,13 @@ function submitScore(){
   var match={ match_date:val("mdate"), event:"Social", set_scores:val("mset"),
     t1_sets:t1s, t2_sets:t2s, t1_games:t1g, t2_games:t2g };
   if(d==="padel"){
-    var a=val("p_t1"), b=val("p_t2");
-    if(!a||!b||a===b){ msg.className="msg err"; msg.textContent="Choose two different pairs."; return; }
-    var pa=S.pairs.find(function(p){return p.name===a;}), pb=S.pairs.find(function(p){return p.name===b;});
-    match.t1p1=a; match.t1p2=null; match.t2p1=b; match.t2p2=null;
+    var n1p=val("p_t1"), n1q=val("p_t1b"), n2p=val("p_t2"), n2q=val("p_t2b");
+    var need4=[n1p,n1q,n2p,n2q];
+    if(need4.some(function(x){return !x;})){ msg.className="msg err"; msg.textContent="Choose all four players."; return; }
+    var u={}; var dup4=false; need4.forEach(function(x){ if(u[x])dup4=true; u[x]=1; });
+    if(dup4){ msg.className="msg err"; msg.textContent="The same member is selected twice."; return; }
+    match.t1p1=n1p; match.t1p2=n1q; match.t2p1=n2p; match.t2p2=n2q;
     match.match_format="doubles";
-    match.match_type=(pa&&pb&&pa.gender===pb.gender)?pairTypeLabel(pa.gender):"Mixed";
   } else {
     var dbl=(S.fmt==="doubles");
     var n1=val("p_t1"), n2=val("p_t2"), n1b=dbl?val("p_t1b"):null, n2b=dbl?val("p_t2b"):null;
@@ -369,6 +372,16 @@ function vProfileDisc(m){
       }
     }
     el.innerHTML=h;
+    if(d!=="padel"){
+      rest("cc_doubles_results?club_id=eq."+CID+"&discipline=eq."+d+"&select=category,p1,p2,weighted,matches,wins,losses,win_pct&order=weighted.desc").then(function(dr){
+        var mine=(dr||[]).filter(function(r){ return r.p2 && (r.p1===nm||r.p2===nm) && r.category!=="Universal"; });
+        if(!mine.length)return;
+        var hh='<h3>Partnerships</h3><table><tr><th>Partner</th><th>Cat</th><th>Rating</th><th>P</th><th>W–L</th><th>Win%</th></tr>';
+        mine.forEach(function(r){ var other=(r.p1===nm)?r.p2:r.p1;
+          hh+='<tr><td>'+esc(nm)+' &amp; '+esc(other)+'</td><td>'+esc(r.category)+'</td><td><b>'+Math.round(r.weighted)+'</b></td><td>'+r.matches+'</td><td>'+r.wins+'–'+r.losses+'</td><td>'+(r.win_pct!=null?r.win_pct:"–")+'</td></tr>'; });
+        el.innerHTML=el.innerHTML+hh+'</table>';
+      });
+    }
   });
   rest("cc_matches?club_id=eq."+CID+"&discipline=eq."+d+"&select=match_date,t1p1,t1p2,t2p1,t2p2,t1_sets,t2_sets,set_scores,rating_delta&order=id.desc&limit=100").then(function(rows){
     rows=rows||[];
@@ -395,24 +408,24 @@ function vAdmin(m){
   h+='<div class="card"><h3>Register member</h3>'
     +'<label>Full name</label><input type="text" id="aNm">'
     +'<div class="row"><div><label>Gender</label><select id="aG"><option value="M">Male</option><option value="F">Female</option></select></div>'
-    +'<div><label>Seed rating</label><input type="number" id="aSeed" value="1200"></div></div>'
+    +'<div><label>Rating (blank = 1500/1300)</label><input type="number" id="aSeed" placeholder="1500 / 1300"></div></div>'
+    +'<label>4-digit PIN (optional)</label><input type="text" id="aMPin" inputmode="numeric" maxlength="6">'
     +'<button class="btn" onclick="aAddMember()">Register member</button>'
-    +'<div class="muted" style="margin-top:6px">Registers once — auto-enrolled for tennis and squash. Padel plays as pairs, formed below.</div>'
+    +'<div class="muted" style="margin-top:6px">Club membership only — no sport affiliation. Partnerships are created automatically the first time two members enter a score together.</div>'
     +'<div class="msg" id="aMsg1"></div></div>';
-  h+='<div class="card"><h3>Form padel pair</h3>'
-    +sel("Member A (name shown first)","aPa",S.members.map(function(x){return x.full_name;}))
-    +sel("Member B","aPb",S.members.map(function(x){return x.full_name;}))
-    +'<button class="btn" onclick="aAddPair()">Create pair</button>'
-    +'<div class="msg" id="aMsg2"></div></div>';
+  h+='<div class="card"><h3>Bulk add members (paste from Excel)</h3>'
+    +'<div class="muted">One member per line: Name, Gender, Rating, PIN (comma or tab separated). Gender M or F required; Rating blank = 1500/1300; PIN optional.</div>'
+    +'<textarea id="aBulk" style="width:100%;min-height:140px;font-family:monospace;font-size:12px;border:1px solid #cfc7b2;border-radius:7px;padding:9px;margin-top:8px" placeholder="John Smith, M, 1350, 1234\nSarah Jones, F, 1180, 5678\nMike Brown\tM\t1420\t9012"></textarea>'
+    +'<button class="btn" onclick="aBulkAdd()">Add all pasted members</button>'
+    +'<div class="msg" id="aMsgB"></div></div>';
   h+='<div class="card"><h3>Members ('+S.members.length+')</h3><div id="aMembers">';
   if(S.members.length){
     h+='<table><tr><th>Name</th><th>G</th><th>Seed</th><th>Now</th></tr>';
     S.members.forEach(function(r){ h+='<tr><td>'+esc(r.full_name)+'</td><td>'+esc(r.gender||"")+'</td><td>'+(r.seed_rating!=null?Math.round(r.seed_rating):"–")+'</td><td>'+(r.current_rating!=null?Math.round(r.current_rating):"–")+'</td></tr>'; });
     h+='</table>';
   } else h+='<span class="muted">None yet.</span>';
-  h+='</div><h3 style="margin-top:12px">Padel pairs ('+S.pairs.length+')</h3><div>';
-  if(S.pairs.length){ h+=S.pairs.map(function(p){return esc(p.name);}).join('<br>'); } else h+='<span class="muted">None yet.</span>';
-  h+='</div></div>';
+  h+='</div><h3 style="margin-top:12px">Partnerships</h3><div id="aPart" class="muted">Loading…</div></div>';
+  loadPartnerships();
   h+='<div class="card"><h3>Correct a match</h3>'
     +'<div class="row"><div>'+sel("Discipline","aDd",["padel","tennis","squash"])+'</div><div><label>&nbsp;</label><button class="mini" style="width:100%;padding:9px" onclick="aLoadMatches()">Load recent</button></div></div>'
     +'<div id="aMatches" class="muted" style="margin-top:8px"></div><div class="msg" id="aMsg3"></div></div>';
@@ -426,16 +439,61 @@ function vAdmin(m){
 function apin(){ S.adminPin=val("aPin"); return S.adminPin; }
 function aAddMember(){
   var msg=document.getElementById("aMsg1"); msg.className="msg ok"; msg.textContent="Working…";
-  fn("cc_admin",{action:"add_member",club_id:CID,admin_pin:apin(),full_name:val("aNm"),gender:val("aG"),seed_rating:val("aSeed")||1200}).then(function(r){
+  fn("cc_admin",{action:"add_member",club_id:CID,admin_pin:apin(),full_name:val("aNm"),gender:val("aG"),seed_rating:val("aSeed")||null,pin:val("aMPin")}).then(function(r){
     if(r&&r.ok){ msg.className="msg ok"; msg.textContent="Registered — enrolled for tennis and squash."; loadRoster().then(render); }
     else { msg.className="msg err"; msg.textContent=(r&&r.error)||"Failed."; }
   });
 }
-function aAddPair(){
-  var msg=document.getElementById("aMsg2"); msg.className="msg ok"; msg.textContent="Working…";
-  fn("cc_admin",{action:"add_pair",club_id:CID,admin_pin:apin(),member_a:val("aPa"),member_b:val("aPb")}).then(function(r){
-    if(r&&r.ok){ msg.className="msg ok"; msg.textContent="Pair created: "+r.pair.name; loadRoster().then(render); }
-    else { msg.className="msg err"; msg.textContent=(r&&r.error)||"Failed."; }
+function aBulkAdd(){
+  var msg=document.getElementById("aMsgB"); msg.className="msg";
+  var raw=val("aBulk");
+  var lines=raw.split("\n").map(function(l){return l.trim();}).filter(function(l){return l.length;});
+  if(!lines.length){ msg.className="msg err"; msg.textContent="Nothing to add — paste some rows first."; return; }
+  var rows=[], errs=[];
+  lines.forEach(function(ln,i){
+    var parts=ln.split(/\t|,/).map(function(p){return p.trim();}).filter(function(p){return p!=="";});
+    if(parts.length<2){ errs.push("Line "+(i+1)+": need at least Name, Gender."); return; }
+    var name=parts[0], gender=(parts[1]||"").toUpperCase().charAt(0), rating=parts[2], pin=parts[3];
+    if(gender!=="M"&&gender!=="F"){ errs.push("Line "+(i+1)+" ("+name+"): gender must be M or F."); return; }
+    rows.push({ full_name:name, gender:gender, rating:rating||null, pin:pin||null });
+  });
+  if(errs.length){ msg.className="msg err"; msg.innerHTML=errs.map(esc).join("<br>"); return; }
+  msg.className="msg ok"; msg.textContent="Adding "+rows.length+" members…";
+  fn("cc_admin",{action:"bulk_add_members",club_id:CID,admin_pin:apin(),rows:rows}).then(function(r){
+    if(r&&r.ok){
+      var t="Added "+r.added+" member"+(r.added===1?"":"s")+".";
+      if(r.failed&&r.failed.length){ msg.className="msg err"; msg.textContent=t+" Failed: "+r.failed.join(", "); }
+      else { msg.className="msg ok"; msg.textContent=t; document.getElementById("aBulk").value=""; }
+      loadRoster().then(render);
+    } else { msg.className="msg err"; msg.textContent=(r&&r.error)||"Failed."; }
+  });
+}
+function loadPartnerships(){
+  Promise.all([
+    rest("cc_players?club_id=eq."+CID+"&discipline=eq.padel&select=name&order=name"),
+    rest("cc_doubles_results?club_id=eq."+CID+"&discipline=eq.tennis&select=p1,p2"),
+    rest("cc_doubles_results?club_id=eq."+CID+"&discipline=eq.squash&select=p1,p2")
+  ]).then(function(res){
+    var map={};
+    function addP(display,disc){
+      var key=display.split(" & ").slice().sort().join("|");
+      if(!map[key])map[key]={display:display,discs:{}};
+      map[key].discs[disc]=1;
+    }
+    (res[0]||[]).forEach(function(r){ addP(r.name,"padel"); });
+    (res[1]||[]).forEach(function(r){ if(r.p2) addP(r.p1+" & "+r.p2,"tennis"); });
+    (res[2]||[]).forEach(function(r){ if(r.p2) addP(r.p1+" & "+r.p2,"squash"); });
+    var el=document.getElementById("aPart"); if(!el)return;
+    var keys=Object.keys(map).sort();
+    if(!keys.length){ el.textContent="None yet — partnerships appear as scores are entered."; return; }
+    var h="";
+    keys.forEach(function(k){
+      var p=map[k];
+      h+='<div style="padding:5px 0;border-bottom:1px solid var(--linen-2)">'+esc(p.display)+' ';
+      Object.keys(p.discs).sort().forEach(function(d){ h+='<span class="pill '+d+'">'+DLABEL[d]+'</span> '; });
+      h+='</div>';
+    });
+    el.innerHTML=h;
   });
 }
 function aLoadMatches(){
