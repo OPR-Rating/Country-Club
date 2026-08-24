@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Country Club</title>
 <!--
-  VERSION: CC-FRONTDOOR v2026.08.24-3  (Rating label + 1500/1300 defaults; bulk add ported from OPR)
+  VERSION: CC-FRONTDOOR v2026.08.24-4  (admin PIN GATE — family pattern: PIN alone first; the PIN answers which club you are administering)
   COUNTRY CLUB (CC) · single front door · one club register, three disciplines.
   URL pattern: cc.html?club=1 (one file serves every country club — the header
   reads the club's name from cc_clubs, so "Farland Country Club" is just data).
@@ -115,7 +115,7 @@ function typeFromGenders(gs){ var m=0,f=0; gs.forEach(function(g){ if(g==="M")m+
 function pairTypeLabel(g){ return g==="M"?"Men's":(g==="L"?"Ladies":"Mixed"); }
 
 /* ================= STATE ================= */
-var S={view:"home",disc:null,members:[],pairs:[],club:null,profName:null,profDisc:null,adminPin:""};
+var S={view:"home",disc:null,members:[],pairs:[],club:null,profName:null,profDisc:null,adminPin:"",adminOpen:false,adminClub:null,adminMaster:false,adminClubs:[]};
 
 /* ================= BOOT ================= */
 function boot(){
@@ -404,7 +404,24 @@ function vProfileDisc(m){
 
 /* ================= ADMIN ================= */
 function vAdmin(m){
-  var h='<div class="card"><h2>Admin</h2><div class="gate"><label>Admin PIN (club code, or master)</label><input type="password" id="aPin" value="'+esc(S.adminPin)+'"></div></div>';
+  if(!S.adminOpen){
+    m.innerHTML='<div class="card"><h2>Admin</h2>'
+      +'<label>Admin PIN</label><input type="password" id="aPin" inputmode="numeric">'
+      +'<button class="btn" onclick="aUnlock()">Open admin</button>'
+      +'<div class="muted" style="margin-top:6px">Your club code opens your club\'s admin. The master code opens every club.</div>'
+      +'<div class="msg" id="aGateMsg"></div></div>';
+    return;
+  }
+  var here=S.adminClub?S.adminClub.name:"";
+  var h='<div class="card"><h2>Admin — '+esc(here)+'</h2>'
+    +'<div class="row"><div class="muted">'+(S.adminMaster?"Master access":"Club admin access")+'</div>'
+    +'<div style="text-align:right"><button class="mini" onclick="aLock()">Close admin</button></div></div>';
+  if(S.adminMaster && S.adminClubs.length>1){
+    h+='<label>Administering club</label><select id="aClubSel" onchange="aSwitchClub()">';
+    S.adminClubs.forEach(function(c){ h+='<option value="'+c.id+'"'+((S.adminClub&&S.adminClub.id===c.id)?" selected":"")+'>'+esc(c.name)+' (#'+c.id+')</option>'; });
+    h+='</select>';
+  }
+  h+='</div>';
   h+='<div class="card"><h3>Register member</h3>'
     +'<label>Full name</label><input type="text" id="aNm">'
     +'<div class="row"><div><label>Gender</label><select id="aG"><option value="M">Male</option><option value="F">Female</option></select></div>'
@@ -436,7 +453,55 @@ function vAdmin(m){
     +'<div class="msg" id="aMsg4"></div></div>';
   m.innerHTML=h;
 }
-function apin(){ S.adminPin=val("aPin"); return S.adminPin; }
+function apin(){ return S.adminPin; }
+function aUnlock(){
+  var p=val("aPin"); var msg=document.getElementById("aGateMsg");
+  if(!p){ msg.className="msg err"; msg.textContent="Enter a PIN."; return; }
+  msg.className="msg ok"; msg.textContent="Checking…";
+  fn("cc_admin",{action:"list_clubs"}).then(function(r){
+    var clubs=(r&&r.clubs)||[];
+    // probe the PIN against THIS club first, then every club (a club code
+    // identifies its club; the master passes everywhere).
+    var probeIds=[CID].concat(clubs.map(function(c){return c.id;}).filter(function(i){return i!==CID;}));
+    var i=0;
+    function tryNext(){
+      if(i>=probeIds.length){ msg.className="msg err"; msg.textContent="PIN not recognised."; return; }
+      var id=probeIds[i++];
+      fn("cc_admin",{action:"edit_member",club_id:id,admin_pin:p,full_name:"__pin_probe__"}).then(function(rr){
+        var e=(rr&&rr.error)||"";
+        if(e==="Admin PIN required."){ tryNext(); return; }
+        // PIN accepted for this club (any other response passed the gate)
+        S.adminPin=p; S.adminOpen=true; S.adminClubs=clubs;
+        S.adminClub=clubs.find(function(c){return c.id===id;})||{id:id,name:"Club #"+id};
+        // master detection: PIN passes for a SECOND club too (or only one club exists
+        // and the probe passed while it is not that club's own stored code — safe
+        // fallback: try one other club if present)
+        var other=clubs.find(function(c){return c.id!==id;});
+        if(other){
+          fn("cc_admin",{action:"edit_member",club_id:other.id,admin_pin:p,full_name:"__pin_probe__"}).then(function(r2){
+            S.adminMaster=((r2&&r2.error)||"")!=="Admin PIN required.";
+            if(!S.adminMaster){ S.adminClubs=[S.adminClub]; }
+            afterUnlock();
+          });
+        } else { S.adminMaster=true; afterUnlock(); }
+      });
+    }
+    tryNext();
+  });
+}
+function afterUnlock(){
+  if(S.adminClub && S.adminClub.id!==CID){
+    // the PIN belongs to a different club than the page URL — follow the PIN
+    location.search="?club="+S.adminClub.id;
+    return;
+  }
+  render();
+}
+function aSwitchClub(){
+  var id=parseInt(val("aClubSel"),10);
+  if(id && (!S.adminClub||id!==S.adminClub.id)){ location.search="?club="+id; }
+}
+function aLock(){ S.adminOpen=false; S.adminPin=""; S.adminMaster=false; render(); }
 function aAddMember(){
   var msg=document.getElementById("aMsg1"); msg.className="msg ok"; msg.textContent="Working…";
   fn("cc_admin",{action:"add_member",club_id:CID,admin_pin:apin(),full_name:val("aNm"),gender:val("aG"),seed_rating:val("aSeed")||null,pin:val("aMPin")}).then(function(r){
