@@ -8690,7 +8690,7 @@ async function clRemove(id, label){
 
 <script>
 /* ============================================================
-   CC DEEP-LINK GLUE v2026.08.25-3 (waits for roster cache; boot veil hides the flash; permanent "‹ Club" chip home) (additive; no family code modified)
+   CC DEEP-LINK GLUE v2026.08.25-4 (chip shows glue version on-page; entry opens immediately; profile waits for roster) (additive; no family code modified)
    Lets the CC front door land directly on a screen inside this app:
      ?player=<name>&gender=<M|F>   -> that member's profile page
      ?view=enter                   -> the +Enter Score wizard
@@ -8710,7 +8710,7 @@ async function clRemove(id, label){
     var a = document.createElement('a');
     a.id='ccHomeChip';
     a.href='cc.html?club='+encodeURIComponent(cid);
-    a.textContent='‹ Club';
+    a.textContent='‹ Club · g4';
     a.style.cssText='position:fixed;left:10px;bottom:12px;z-index:99999;background:#1B3B2F;color:#F2EDE0;border:1px solid #C9A44C;padding:8px 14px;border-radius:99px;font:600 13px -apple-system,Segoe UI,Roboto,Arial,sans-serif;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,.3)';
     document.body.appendChild(a);
   }
@@ -8731,18 +8731,20 @@ async function clRemove(id, label){
     var tries = 0;
     var timer = setInterval(function(){
       tries++;
-      var ready = false;
-      try{ ready = (typeof _playersLoaded !== 'undefined' && _playersLoaded); }catch(e){}
-      if(!ready && tries < 24) return;   // wait up to ~6s for the roster cache
       try{
-        if(p && typeof loadProfile === 'function' && document.getElementById('profileScreen')){
-          clearInterval(timer); lift();
-          loadProfile(p, g);
-          return;
-        }
+        // ENTRY: open the moment the screen exists — the wizard loads its own data.
         if(v === 'enter' && typeof showScreen === 'function' && document.getElementById('entryScreen')){
           clearInterval(timer); lift();
           showScreen('entryScreen');
+          return;
+        }
+        // PROFILE: wait for the roster cache so the page never renders empty;
+        // after ~6s proceed anyway rather than strand the user on the veil.
+        var ready = false;
+        try{ ready = (typeof _playersLoaded !== 'undefined' && _playersLoaded); }catch(e){}
+        if(p && (ready || tries >= 24) && typeof loadProfile === 'function' && document.getElementById('profileScreen')){
+          clearInterval(timer); lift();
+          loadProfile(p, g);
           return;
         }
       }catch(e){}
