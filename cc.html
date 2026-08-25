@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Country Club</title>
 <!--
-  VERSION: CC-FRONTDOOR v2026.08.24-6  (SLIM FRONT DOOR: identity + honour board + admin. Entry/stats/reporting live in the three family replicas — cc-padel.html / cc-tennis.html / cc-squash.html — per the replica architecture.)
+  VERSION: CC-FRONTDOOR v2026.08.25-8  (admin: per-discipline Rebuild ratings buttons)  (deep links: plaques open the member INSIDE the replica; sport cards offer direct +Score)  (SLIM FRONT DOOR: identity + honour board + admin. Entry/stats/reporting live in the three family replicas — cc-padel.html / cc-tennis.html / cc-squash.html — per the replica architecture.)
   COUNTRY CLUB (CC) · single front door · one club register, three disciplines.
   URL pattern: cc.html?club=1 (one file serves every country club — the header
   reads the club's name from cc_clubs, so "Farland Country Club" is just data).
@@ -83,7 +83,7 @@ tr.tap{cursor:pointer}tr.tap:active{background:var(--linen)}
 <header>
   <h1 id="clubName" class="serif">Country Club</h1>
   <div class="sub">One club · Three disciplines · One rating home</div>
-  <div style="font-size:.62rem;color:#7a917f;margin-top:4px;letter-spacing:1px">v2026.08.24-6</div>
+  <div style="font-size:.62rem;color:#7a917f;margin-top:4px;letter-spacing:1px">v2026.08.25-8</div>
 </header>
 <nav id="nav">
   <button data-v="home" class="on">Home</button>
@@ -150,13 +150,19 @@ function render(){
 function vHome(m){
   var h='<div class="card"><h2>Select your discipline</h2><div class="sport-grid">';
   DISCS.forEach(function(d){
-    h+='<button class="sport-card '+d+'" onclick="goSport(\''+d+'\')"><div class="nm">'+DLABEL[d]+'</div><div class="eng">'+DENGINE[d]+' · full app: scores, umpire, stats</div></button>';
+    h+='<button class="sport-card '+d+'" onclick="goSport(\''+d+'\')"><div class="nm">'+DLABEL[d]+'</div><div class="eng">'+DENGINE[d]+' · full app: scores, umpire, stats</div>'
+      +'<span onclick="goEnter(event,\''+d+'\')" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.45);padding:7px 12px;border-radius:99px;font-size:.78rem;font-weight:700">+ Score</span></button>';
   });
   h+='</div></div>';
   h+='<div class="card"><div class="muted">Register once, play everything. Every member holds one profile across all three sports — open <b>Profiles</b> to see the honour board.</div></div>';
   m.innerHTML=h;
 }
-function goSport(d){ location.href="cc-"+({padel:"padel",tennis:"tennis",squash:"squash"}[d])+".html?club="+CID; }
+function goSport(d){ location.href="cc-"+d+".html?club="+CID; }
+function goEnter(ev,d){ ev.stopPropagation(); location.href="cc-"+d+".html?club="+CID+"&view=enter"; }
+function goProfile(d){
+  var me=S.members.find(function(x){return x.full_name===S.profName;})||{};
+  location.href="cc-"+d+".html?club="+CID+"&player="+encodeURIComponent(S.profName)+"&gender="+encodeURIComponent(me.gender||"M");
+}
 
 /* ============ shared form helpers (admin) ============ */
 function sel(lab,id,arr){
@@ -251,7 +257,7 @@ function vProfileBoard(m){
       rows.forEach(function(r){
         var cur=(r.cur!=null)?Math.round(r.cur):"–";
         var rk=(r.rank!=null)?("rank "+r.rank+" / "+r.n):"unranked";
-        h+='<div class="plaque '+r.d+'" onclick="goSport(\''+r.d+'\')">'
+        h+='<div class="plaque '+r.d+'" onclick="goProfile(\''+r.d+'\')">'
           +'<div><div class="d">'+DLABEL[r.d]+'</div><div class="r">'+cur+'</div></div>'
           +'<div class="side">level '+lvl(r.cur)+'<br>move '+mvHtml(r.move)+'<br>'+rk+' ›</div></div>';
       });
@@ -300,6 +306,13 @@ function vAdmin(m){
   } else h+='<span class="muted">None yet.</span>';
   h+='</div><h3 style="margin-top:12px">Partnerships</h3><div id="aPart" class="muted">Loading…</div></div>';
   loadPartnerships();
+  h+='<div class="card"><h3>Rebuild ratings</h3>'
+    +'<div class="muted">Replays every match of that discipline from the register ratings — safe to run any time.</div>'
+    +'<div class="row" style="margin-top:8px">'
+    +'<button class="mini" style="padding:10px" onclick="aRebuild(\'padel\')">Padel</button>'
+    +'<button class="mini" style="padding:10px" onclick="aRebuild(\'tennis\')">Tennis</button>'
+    +'<button class="mini" style="padding:10px" onclick="aRebuild(\'squash\')">Squash</button>'
+    +'</div><div class="msg" id="aMsgR"></div></div>';
   h+='<div class="card"><h3>Correct a match</h3>'
     +'<div class="row"><div>'+sel("Discipline","aDd",["padel","tennis","squash"])+'</div><div><label>&nbsp;</label><button class="mini" style="width:100%;padding:9px" onclick="aLoadMatches()">Load recent</button></div></div>'
     +'<div id="aMatches" class="muted" style="margin-top:8px"></div><div class="msg" id="aMsg3"></div></div>';
@@ -417,6 +430,13 @@ function loadPartnerships(){
     });
     el.innerHTML=h;
   });
+}
+function aRebuild(d){
+  var msg=document.getElementById("aMsgR"); msg.className="msg ok"; msg.textContent="Rebuilding "+d+" ratings…";
+  fn("cc_recompute_"+d,{club_id:CID}).then(function(r){
+    if(r&&(r.ok||r.processed!=null||r.players!=null||!r.error)){ msg.className="msg ok"; msg.textContent=DLABEL[d]+" ratings rebuilt — refresh Profiles to see the board update."; loadRoster(); }
+    else { msg.className="msg err"; msg.textContent=(r&&r.error)||"Rebuild failed."; }
+  }).catch(function(e){ msg.className="msg err"; msg.textContent=String(e); });
 }
 function aLoadMatches(){
   var d=val("aDd"); if(!d)return;

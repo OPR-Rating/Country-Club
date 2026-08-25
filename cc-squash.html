@@ -8780,5 +8780,42 @@ async function clRemove(id, label){
     if(window.scrollY > 300) b.classList.add('show'); else b.classList.remove('show');
   });
 </script>
+
+<script>
+/* ============================================================
+   CC DEEP-LINK GLUE v2026.08.25-2 (loadProfile entry point + boot polling) (additive; no family code modified)
+   Lets the CC front door land directly on a screen inside this app:
+     ?player=<name>&gender=<M|F>   -> that member's profile page
+     ?view=enter                   -> the +Enter Score wizard
+   Calls the app's OWN navigation functions after boot; if a target
+   doesn't exist the page just stays on home (safe no-op).
+   ============================================================ */
+window.addEventListener('load', function(){
+  try{
+    var q = new URLSearchParams(location.search);
+    var p = q.get('player');
+    var g = q.get('gender') || 'M';
+    var v = q.get('view');
+    if(!p && !v) return;
+    var tries = 0;
+    var timer = setInterval(function(){
+      tries++;
+      try{
+        if(p && typeof loadProfile === 'function' && document.getElementById('profileScreen')){
+          clearInterval(timer);
+          loadProfile(p, g);            // the family's own entry point: title, state, tabs, then the page
+          return;
+        }
+        if(v === 'enter' && typeof showScreen === 'function' && document.getElementById('entryScreen')){
+          clearInterval(timer);
+          showScreen('entryScreen');
+          return;
+        }
+      }catch(e){}
+      if(tries > 40) clearInterval(timer);   // ~10s then give up quietly
+    }, 250);
+  }catch(e){}
+});
+</script>
 </body>
 </html>
