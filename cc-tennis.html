@@ -7935,39 +7935,66 @@ async function clRemove(id, label){
 
 <script>
 /* ============================================================
-   CC DEEP-LINK GLUE v2026.08.25-2 (loadProfile entry point + boot polling) (additive; no family code modified)
+   CC DEEP-LINK GLUE v2026.08.25-3 (waits for roster cache; boot veil hides the flash; permanent "‹ Club" chip home) (additive; no family code modified)
    Lets the CC front door land directly on a screen inside this app:
      ?player=<name>&gender=<M|F>   -> that member's profile page
      ?view=enter                   -> the +Enter Score wizard
    Calls the app's OWN navigation functions after boot; if a target
    doesn't exist the page just stays on home (safe no-op).
    ============================================================ */
-window.addEventListener('load', function(){
-  try{
-    var q = new URLSearchParams(location.search);
-    var p = q.get('player');
-    var g = q.get('gender') || 'M';
-    var v = q.get('view');
+(function(){
+  var q = new URLSearchParams(location.search);
+  var p = q.get('player');
+  var g = q.get('gender') || 'M';
+  var v = q.get('view');
+  var cid = q.get('club') || '1';
+  // "‹ Club" chip — always present when arriving from the CC front door, so Back
+  // never means wandering the whole app: one tap returns to the club.
+  function addChip(){
+    if(document.getElementById('ccHomeChip')) return;
+    var a = document.createElement('a');
+    a.id='ccHomeChip';
+    a.href='cc.html?club='+encodeURIComponent(cid);
+    a.textContent='‹ Club';
+    a.style.cssText='position:fixed;left:10px;bottom:12px;z-index:99999;background:#1B3B2F;color:#F2EDE0;border:1px solid #C9A44C;padding:8px 14px;border-radius:99px;font:600 13px -apple-system,Segoe UI,Roboto,Arial,sans-serif;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,.3)';
+    document.body.appendChild(a);
+  }
+  // Boot veil — only for deep links: covers the home-screen flash until the
+  // target screen has been opened (or we give up and reveal the app).
+  var veil=null;
+  if(p || v){
+    veil = document.createElement('div');
+    veil.id='ccVeil';
+    veil.style.cssText='position:fixed;inset:0;z-index:99998;background:#1B3B2F;display:flex;align-items:center;justify-content:center;color:#F2EDE0;font:600 15px -apple-system,Segoe UI,Roboto,Arial,sans-serif;letter-spacing:1px';
+    veil.textContent='Opening…';
+    document.body.appendChild(veil);
+  }
+  function lift(){ if(veil){ try{ veil.remove(); }catch(e){} veil=null; } }
+  window.addEventListener('load', function(){
+    addChip();
     if(!p && !v) return;
     var tries = 0;
     var timer = setInterval(function(){
       tries++;
+      var ready = false;
+      try{ ready = (typeof _playersLoaded !== 'undefined' && _playersLoaded); }catch(e){}
+      if(!ready && tries < 24) return;   // wait up to ~6s for the roster cache
       try{
         if(p && typeof loadProfile === 'function' && document.getElementById('profileScreen')){
-          clearInterval(timer);
-          loadProfile(p, g);            // the family's own entry point: title, state, tabs, then the page
+          clearInterval(timer); lift();
+          loadProfile(p, g);
           return;
         }
         if(v === 'enter' && typeof showScreen === 'function' && document.getElementById('entryScreen')){
-          clearInterval(timer);
+          clearInterval(timer); lift();
           showScreen('entryScreen');
           return;
         }
       }catch(e){}
-      if(tries > 40) clearInterval(timer);   // ~10s then give up quietly
+      if(tries > 40){ clearInterval(timer); lift(); }
     }, 250);
-  }catch(e){}
-});
+  });
+})();
 </script>
 </body>
 </html>
