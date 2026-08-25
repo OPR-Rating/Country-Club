@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Country Club</title>
 <!--
-  VERSION: CC-FRONTDOOR v2026.08.25-9  (dynamic member search on Profiles)  (admin: per-discipline Rebuild ratings buttons)  (deep links: plaques open the member INSIDE the replica; sport cards offer direct +Score)  (SLIM FRONT DOOR: identity + honour board + admin. Entry/stats/reporting live in the three family replicas — cc-padel.html / cc-tennis.html / cc-squash.html — per the replica architecture.)
+  VERSION: CC-FRONTDOOR v2026.08.25-11  (sport cards: two labelled buttons — no hidden tap targets)  (dynamic member search on Profiles)  (admin: per-discipline Rebuild ratings buttons)  (deep links: plaques open the member INSIDE the replica; sport cards offer direct +Score)  (SLIM FRONT DOOR: identity + honour board + admin. Entry/stats/reporting live in the three family replicas — cc-padel.html / cc-tennis.html / cc-squash.html — per the replica architecture.)
   COUNTRY CLUB (CC) · single front door · one club register, three disciplines.
   URL pattern: cc.html?club=1 (one file serves every country club — the header
   reads the club's name from cc_clubs, so "Farland Country Club" is just data).
@@ -83,7 +83,7 @@ tr.tap{cursor:pointer}tr.tap:active{background:var(--linen)}
 <header>
   <h1 id="clubName" class="serif">Country Club</h1>
   <div class="sub">One club · Three disciplines · One rating home</div>
-  <div style="font-size:.62rem;color:#7a917f;margin-top:4px;letter-spacing:1px">v2026.08.25-9</div>
+  <div style="font-size:.62rem;color:#7a917f;margin-top:4px;letter-spacing:1px">v2026.08.25-11</div>
 </header>
 <nav id="nav">
   <button data-v="home" class="on">Home</button>
@@ -150,8 +150,12 @@ function render(){
 function vHome(m){
   var h='<div class="card"><h2>Select your discipline</h2><div class="sport-grid">';
   DISCS.forEach(function(d){
-    h+='<button class="sport-card '+d+'" onclick="goSport(\''+d+'\')"><div class="nm">'+DLABEL[d]+'</div><div class="eng">'+DENGINE[d]+' · full app: scores, umpire, stats</div>'
-      +'<span onclick="goEnter(event,\''+d+'\')" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.45);padding:7px 12px;border-radius:99px;font-size:.78rem;font-weight:700">+ Score</span></button>';
+    h+='<div class="sport-card '+d+'" style="cursor:default">'
+      +'<div class="nm">'+DLABEL[d]+'</div><div class="eng">'+DENGINE[d]+'</div>'
+      +'<div style="display:flex;gap:10px;margin-top:14px">'
+      +'<button onclick="goEnter(event,\''+d+'\')" style="flex:1.4;background:rgba(255,255,255,.92);color:#1B3B2F;border:none;padding:12px 8px;border-radius:9px;font-size:.95rem;font-weight:800;cursor:pointer">+ Enter Score</button>'
+      +'<button onclick="goSport(\''+d+'\')" style="flex:1;background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.5);padding:12px 8px;border-radius:9px;font-size:.85rem;font-weight:600;cursor:pointer">Open full app</button>'
+      +'</div></div>';
   });
   h+='</div></div>';
   h+='<div class="card"><div class="muted">Register once, play everything. Every member holds one profile across all three sports — open <b>Profiles</b> to see the honour board.</div></div>';
@@ -211,7 +215,7 @@ function vProfile(m){
   if(S.profName)return vProfileBoard(m);
   var h='<div class="card"><h2>Member profiles</h2>';
   if(!S.members.length){ h+='<div class="muted">No members registered yet — Admin → Register member.</div></div>'; m.innerHTML=h; return; }
-  h+='<label>Search members</label><input type="text" id="pSearch" placeholder="Start typing a name…" oninput="filterProfiles()" autocomplete="off">';
+  h+='<div style="position:sticky;top:46px;background:#fff;padding:4px 0 8px;z-index:3"><label>Search members</label><input type="text" id="pSearch" placeholder="Start typing a name…" oninput="filterProfiles()" autocomplete="off"></div>';
   h+='<div id="pList"></div></div>';
   m.innerHTML=h;
   filterProfiles();
@@ -223,11 +227,10 @@ function filterProfiles(){
   var el=document.getElementById("pList"); if(!el)return;
   if(!rows.length){ el.innerHTML='<div class="muted" style="margin-top:8px">No members match.</div>'; return; }
   var h='<table><tr><th>Member</th><th></th></tr>';
-  rows.slice(0,40).forEach(function(r){
+  rows.forEach(function(r){
     h+='<tr class="tap" onclick="openProfile(\''+esc(r.full_name).replace(/'/g,"\\'")+'\')"><td>'+esc(r.full_name)+'</td><td class="muted">view ›</td></tr>';
   });
   h+='</table>';
-  if(rows.length>40) h+='<div class="muted" style="margin-top:6px">'+(rows.length-40)+' more — keep typing to narrow.</div>';
   el.innerHTML=h;
 }
 function openProfile(nm){ S.profName=nm; S.profDisc=null; render(); }
