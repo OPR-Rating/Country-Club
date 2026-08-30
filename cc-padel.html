@@ -8737,7 +8737,7 @@ async function clRemove(id, label){
 </script>
 <script>
 /* ============================================================
-   CC DEEP-LINK GLUE v2026.08.25-6 (g6: profile opens only after a live data probe succeeds; bounce covers home AND profile-search) (additive; no family code modified)
+   CC DEEP-LINK GLUE v2026.08.25-7 (g7: probe removed — v44-generation parents self-load their data; opens on app readiness) (additive; no family code modified)
    Lets the CC front door land directly on a screen inside this app:
      ?player=<name>&gender=<M|F>   -> that member's profile page
      ?view=enter                   -> the +Enter Score wizard
@@ -8757,7 +8757,7 @@ async function clRemove(id, label){
     var a = document.createElement('a');
     a.id='ccHomeChip';
     a.href='cc.html?club='+encodeURIComponent(cid);
-    a.textContent='‹ Club · g6';
+    a.textContent='‹ Club · g7';
     a.style.cssText='position:fixed;left:10px;bottom:12px;z-index:99999;background:#1B3B2F;color:#F2EDE0;border:1px solid #C9A44C;padding:8px 14px;border-radius:99px;font:600 13px -apple-system,Segoe UI,Roboto,Arial,sans-serif;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,.3)';
     document.body.appendChild(a);
   }
@@ -8808,28 +8808,12 @@ async function clRemove(id, label){
         }
         // PROFILE: wait for the roster cache so the page never renders empty;
         // after ~6s proceed anyway rather than strand the user on the veil.
-        if(p && typeof loadProfile === 'function' && document.getElementById('profileScreen')){
-          if(!window._ccProbeStarted){
-            window._ccProbeStarted = true;
-            // Probe the same data road the profile uses; open only on real data.
-            var probeUrl = (typeof SB_URL !== 'undefined' ? SB_URL : '') +
-              '/rest/v1/player_results?select=name&name=eq.' + encodeURIComponent(p) +
-              '&club_id=eq.' + encodeURIComponent(cid) + '&limit=1';
-            var attempt = 0;
-            var fire = function(){ clearInterval(timer); lift(); loadProfile(p, g); armHomeBounce(); };
-            var probe = function(){
-              attempt++;
-              fetch(probeUrl, { headers: (typeof SB_ANON !== 'undefined' ? { apikey: SB_ANON, Authorization: 'Bearer ' + SB_ANON } : {}) })
-                .then(function(r){ return r.ok ? r.json() : null; })
-                .then(function(rows){
-                  if(rows && rows.length){ fire(); }
-                  else if(attempt >= 8){ fire(); }   // member may have no results yet — open anyway
-                  else setTimeout(probe, 500);
-                })
-                .catch(function(){ if(attempt >= 8) fire(); else setTimeout(probe, 500); });
-            };
-            probe();
-          }
+        var ready = false;
+        try{ ready = (typeof _playersLoaded !== 'undefined' && _playersLoaded); }catch(e){}
+        if(p && (ready || tries >= 16) && typeof loadProfile === 'function' && document.getElementById('profileScreen')){
+          clearInterval(timer); lift();
+          loadProfile(p, g);      // v44-generation profiles await their own single-source load internally
+          armHomeBounce();
           return;
         }
       }catch(e){}

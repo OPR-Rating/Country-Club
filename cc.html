@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Country Club</title>
 <!--
-  VERSION: CC-FRONTDOOR v2026.08.25-12  (padel plaque reads cc_player_results — SAME system as tennis/squash; cc_individuals write-back no longer relied on)  (dynamic member search on Profiles)  (admin: per-discipline Rebuild ratings buttons)  (deep links: plaques open the member INSIDE the replica; sport cards offer direct +Score)  (SLIM FRONT DOOR: identity + honour board + admin. Entry/stats/reporting live in the three family replicas — cc-padel.html / cc-tennis.html / cc-squash.html — per the replica architecture.)
+  VERSION: CC-FRONTDOOR v2026.08.25-13  (padel plaque computed by the family's v44 single-source algorithm: seed + replayed match deltas, pairs expanded via member links — no dependency on any write-back column)  (dynamic member search on Profiles)  (admin: per-discipline Rebuild ratings buttons)  (deep links: plaques open the member INSIDE the replica; sport cards offer direct +Score)  (SLIM FRONT DOOR: identity + honour board + admin. Entry/stats/reporting live in the three family replicas — cc-padel.html / cc-tennis.html / cc-squash.html — per the replica architecture.)
   COUNTRY CLUB (CC) · single front door · one club register, three disciplines.
   URL pattern: cc.html?club=1 (one file serves every country club — the header
   reads the club's name from cc_clubs, so "Farland Country Club" is just data).
@@ -83,7 +83,7 @@ tr.tap{cursor:pointer}tr.tap:active{background:var(--linen)}
 <header>
   <h1 id="clubName" class="serif">Country Club</h1>
   <div class="sub">One club · Three disciplines · One rating home</div>
-  <div style="font-size:.62rem;color:#7a917f;margin-top:4px;letter-spacing:1px">v2026.08.25-12</div>
+  <div style="font-size:.62rem;color:#7a917f;margin-top:4px;letter-spacing:1px">v2026.08.25-13</div>
 </header>
 <nav id="nav">
   <button data-v="home" class="on">Home</button>
@@ -248,14 +248,36 @@ function vProfileBoard(m){
   // profile header shows). Individuals present but unrated fall back
   // to their register rating with move 0.
   Promise.all([
-    rest("cc_player_results?club_id=eq."+CID+"&discipline=eq.padel&select=name,current_rating,initial_rating&order=current_rating.desc"),
+    rest("cc_individuals?club_id=eq."+CID+"&select=id,full_name,seed_rating"),
+    rest("cc_players?club_id=eq."+CID+"&discipline=eq.padel&select=name,member_a_id,member_b_id"),
+    rest("cc_matches?club_id=eq."+CID+"&discipline=eq.padel&select=t1p1,t2p1,rating_delta&order=match_date.asc,id.asc"),
     rest("cc_player_results?club_id=eq."+CID+"&discipline=eq.tennis&select=name,current_rating,initial_rating&order=current_rating.desc"),
     rest("cc_player_results?club_id=eq."+CID+"&discipline=eq.squash&select=name,current_rating,initial_rating&order=current_rating.desc")
   ]).then(function(rr){
     var rows=[{d:"padel"},{d:"tennis"},{d:"squash"}];
-    [0,1,2].forEach(function(i){
-      var list=(rr[i]||[]).filter(function(r){ return String(r.name).indexOf(" & ")<0; });
-      var row=rows[i];
+    // PADEL — the family's v44 single-source replay: seed + own per-match deltas,
+    // pair sides expanded to their two members via the member links.
+    (function(){
+      var inds=rr[0]||[], pairs=rr[1]||[], ms=rr[2]||[];
+      var seed={}, idName={};
+      inds.forEach(function(i){ seed[i.full_name]=(i.seed_rating!=null?+i.seed_rating:1500); idName[i.id]=i.full_name; });
+      var members={};
+      pairs.forEach(function(p2){ if(p2.member_a_id!=null&&p2.member_b_id!=null){ var a=idName[p2.member_a_id], b=idName[p2.member_b_id]; if(a&&b) members[p2.name]=[a,b]; } });
+      var cur={}; Object.keys(seed).forEach(function(k){ cur[k]=seed[k]; });
+      var membersOf=function(pn){ return members[pn]||[pn]; };
+      ms.forEach(function(m2){ var d=(m2.rating_delta!=null?+m2.rating_delta:0);
+        membersOf(m2.t1p1).forEach(function(x){ if(x in cur) cur[x]+=d; });
+        membersOf(m2.t2p1).forEach(function(x){ if(x in cur) cur[x]-=d; }); });
+      var list=Object.keys(cur).map(function(k){ return {name:k, r:Math.round(cur[k])}; })
+        .sort(function(a,b){ return b.r-a.r; });
+      var row=rows[0]; row.n=list.length;
+      list.forEach(function(r,idx){ if(r.name===nm){ row.rank=idx+1; row.cur=r.r; row.move=Math.round(r.r-(seed[nm]!=null?seed[nm]:r.r)); } });
+      if(row.cur==null){ row.cur=(me.seed_rating!=null)?me.seed_rating:null; row.move=(row.cur!=null)?0:null; }
+    })();
+    // TENNIS / SQUASH — engine-written per-player results, as before.
+    [["tennis",rr[3]||[]],["squash",rr[4]||[]]].forEach(function(pr2,ix){
+      var list=pr2[1].filter(function(r){ return String(r.name).indexOf(" & ")<0; });
+      var row=rows[ix+1];
       var meR=null;
       list.forEach(function(r,idx){ if(r.name===nm){ meR=r; row.rank=idx+1; } });
       row.n=list.length;
