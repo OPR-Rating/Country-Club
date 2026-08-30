@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Country Club</title>
 <!--
-  VERSION: CC-FRONTDOOR v2026.08.25-11  (sport cards: two labelled buttons — no hidden tap targets)  (dynamic member search on Profiles)  (admin: per-discipline Rebuild ratings buttons)  (deep links: plaques open the member INSIDE the replica; sport cards offer direct +Score)  (SLIM FRONT DOOR: identity + honour board + admin. Entry/stats/reporting live in the three family replicas — cc-padel.html / cc-tennis.html / cc-squash.html — per the replica architecture.)
+  VERSION: CC-FRONTDOOR v2026.08.25-12  (padel plaque reads cc_player_results — SAME system as tennis/squash; cc_individuals write-back no longer relied on)  (dynamic member search on Profiles)  (admin: per-discipline Rebuild ratings buttons)  (deep links: plaques open the member INSIDE the replica; sport cards offer direct +Score)  (SLIM FRONT DOOR: identity + honour board + admin. Entry/stats/reporting live in the three family replicas — cc-padel.html / cc-tennis.html / cc-squash.html — per the replica architecture.)
   COUNTRY CLUB (CC) · single front door · one club register, three disciplines.
   URL pattern: cc.html?club=1 (one file serves every country club — the header
   reads the club's name from cc_clubs, so "Farland Country Club" is just data).
@@ -83,7 +83,7 @@ tr.tap{cursor:pointer}tr.tap:active{background:var(--linen)}
 <header>
   <h1 id="clubName" class="serif">Country Club</h1>
   <div class="sub">One club · Three disciplines · One rating home</div>
-  <div style="font-size:.62rem;color:#7a917f;margin-top:4px;letter-spacing:1px">v2026.08.25-11</div>
+  <div style="font-size:.62rem;color:#7a917f;margin-top:4px;letter-spacing:1px">v2026.08.25-12</div>
 </header>
 <nav id="nav">
   <button data-v="home" class="on">Home</button>
@@ -242,32 +242,27 @@ function vProfileBoard(m){
   m.innerHTML='<button class="back" onclick="backToList()">‹ All members</button>'
     +'<div class="card"><h2 class="serif">'+esc(nm)+'</h2><div class="muted">The honour board — one member, three disciplines. Tap a plaque to open that sport\'s full app for the complete profile.</div>'
     +'<div class="board" id="board">Loading…</div></div>';
+  // ONE SYSTEM, THREE SPORTS: every plaque reads the engine-written
+  // cc_player_results rows — padel included (the OPR engine writes
+  // per-individual rows there too; it is what the padel replica's own
+  // profile header shows). Individuals present but unrated fall back
+  // to their register rating with move 0.
   Promise.all([
-    rest("cc_player_results?club_id=eq."+CID+"&discipline=eq.tennis&name=eq."+encodeURIComponent(nm)+"&select=current_rating,initial_rating"),
-    rest("cc_player_results?club_id=eq."+CID+"&discipline=eq.squash&name=eq."+encodeURIComponent(nm)+"&select=current_rating,initial_rating"),
-    rest("cc_individuals?club_id=eq."+CID+"&select=full_name,current_rating&order=current_rating.desc")
-  ]).then(function(res){
-    var ten=(res[0]&&res[0][0])||null, squ=(res[1]&&res[1][0])||null;
-    var padList=res[2]||[];
-    var padCur=(me.current_rating!=null)?me.current_rating:null;
-    var padMove=mv(padCur, me.seed_rating);
-    var padRank=null; padList.forEach(function(r,i){ if(r.full_name===nm)padRank=i+1; });
-    var rows=[
-      {d:"padel", cur:padCur, move:padMove, rank:padRank, n:padList.length},
-      {d:"tennis", cur:ten?ten.current_rating:null, move:ten?mv(ten.current_rating,ten.initial_rating):null, rank:null, n:null},
-      {d:"squash", cur:squ?squ.current_rating:null, move:squ?mv(squ.current_rating,squ.initial_rating):null, rank:null, n:null}
-    ];
-    // ranks for tennis/squash from their result lists
-    Promise.all([
-      rest("cc_player_results?club_id=eq."+CID+"&discipline=eq.tennis&select=name,current_rating&order=current_rating.desc"),
-      rest("cc_player_results?club_id=eq."+CID+"&discipline=eq.squash&select=name,current_rating&order=current_rating.desc")
-    ]).then(function(rr){
-      [["tennis",rr[0]||[]],["squash",rr[1]||[]]].forEach(function(pair){
-        var d=pair[0], list=pair[1];
-        var row=rows.find(function(x){return x.d===d;});
-        list.forEach(function(r,i){ if(r.name===nm)row.rank=i+1; });
-        row.n=list.length;
-      });
+    rest("cc_player_results?club_id=eq."+CID+"&discipline=eq.padel&select=name,current_rating,initial_rating&order=current_rating.desc"),
+    rest("cc_player_results?club_id=eq."+CID+"&discipline=eq.tennis&select=name,current_rating,initial_rating&order=current_rating.desc"),
+    rest("cc_player_results?club_id=eq."+CID+"&discipline=eq.squash&select=name,current_rating,initial_rating&order=current_rating.desc")
+  ]).then(function(rr){
+    var rows=[{d:"padel"},{d:"tennis"},{d:"squash"}];
+    [0,1,2].forEach(function(i){
+      var list=(rr[i]||[]).filter(function(r){ return String(r.name).indexOf(" & ")<0; });
+      var row=rows[i];
+      var meR=null;
+      list.forEach(function(r,idx){ if(r.name===nm){ meR=r; row.rank=idx+1; } });
+      row.n=list.length;
+      if(meR){ row.cur=meR.current_rating; row.move=mv(meR.current_rating,meR.initial_rating); }
+      else { row.cur=(me.seed_rating!=null)?me.seed_rating:null; row.move=(row.cur!=null)?0:null; row.rank=null; }
+    });
+    (function(){
       var h="";
       rows.forEach(function(r){
         var cur=(r.cur!=null)?Math.round(r.cur):"–";
@@ -277,7 +272,7 @@ function vProfileBoard(m){
           +'<div class="side">level '+lvl(r.cur)+'<br>move '+mvHtml(r.move)+'<br>'+rk+' ›</div></div>';
       });
       document.getElementById("board").innerHTML=h;
-    });
+    })();
   });
 }
 

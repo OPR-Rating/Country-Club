@@ -343,6 +343,12 @@
   .name-pick-btn.selected { color:#2C2C34; font-weight:600; border-color:#3a1d6e; }
 
   #tournamentSheetContent td.ta, #tournamentSheetContent td.tb { font-size:13px; line-height:1.4; color:#3a2f44; padding:11px 8px; }
+  #tournamentSheetContent table.fxtbl td.ta, #tournamentSheetContent table.fxtbl td.tb { line-height:1.4; }
+  @media(max-width:560px){
+    /* v40: on phones the Band pill (e.g. A·R3) is decoration — reclaim its width for names */
+    #tournamentSheetContent table.fxtbl th:nth-child(3), #tournamentSheetContent table.fxtbl td:nth-child(3){ display:none; }
+    #tournamentSheetContent table.fxtbl td.ta, #tournamentSheetContent table.fxtbl td.tb { font-size:12.5px; padding:10px 6px; }
+  }
   #tournamentSheetContent td.ta.winr, #tournamentSheetContent td.tb.winr { color:#1e7a34; font-weight:700; }
   #tournamentSheetContent td { padding:11px 6px; }
   #tournamentSheetContent th.ta, #tournamentSheetContent th.tb { width:30%; }
@@ -1453,7 +1459,7 @@ function showScreen(id) {
   document.getElementById(id).classList.add('active');
   window.scrollTo(0,0);
   if(id==='entryScreen') renderStep1();
-  if(id==='tournamentScreen'){ window._tourInternalView = 'stats'; loadTournamentPicker(); }
+  if(id==='tournamentScreen'){ window._tourInternalView = 'draw'; loadTournamentPicker(); }  // v39: arriving at Tournaments always lands on Draw & Rounds (this line used to force 'stats', overriding the v37 default)
   if(id==='clubLadderScreen') loadClubLadder();
 }
 
@@ -2974,7 +2980,6 @@ async function loadFormWall(type, title) {
 // === SUPABASE config (test build) ===
 const SB_URL = "https://farlrjnaeojmypzbplmz.supabase.co";
 const SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhcmxyam5hZW9qbXlwemJwbG16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNDkyNjYsImV4cCI6MjA5NjkyNTI2Nn0.SL18KYq6F97vsmcazWMsLcwTJm82nttrvXLpJSKiOsA";
-
 /* ============================================================
    CC ADAPTER SHIM v2026.08.24-2 — COUNTRY CLUB · PADEL LEG
    This file is a FORK of laptop-opr.html (OPR master). The OPR
@@ -3070,7 +3075,7 @@ const _club = CLUBS[_clubParam] || (/^\d+$/.test(_clubParam) ? {id:Number(_clubP
 const CLUB_ID = _club.id;
 document.title = 'OPR · ' + _club.name;
 const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
-const OPR_VERSION = "OPR-DOUBLES v2026.08.23-35";  // RECENT MATCHES WRAP-WHEN-NEEDED: team names wrap to a second line on narrow screens instead of clipping with an ellipsis; screens where the line fits still show one line. Includes v34 ghost filter + 60/40 display pass and all prior.
+const OPR_VERSION = "OPR-DOUBLES v2026.08.26-44";  // ROUND CHIPS NUMBERED BY POSITION: v43 still read numbers from the band, so groups started at R2 and the bye-only round was pushed to the end as a duplicate. Chips are now labelled purely by position within the group (R1..Rn, draw order, no gaps or duplicates). Display only — fixtures, byes, results untouched.
 // Explanation shown above the individual ladder. Open on load so it's read; collapsible
 // (state kept for the session) and scrolls away. Mechanics only — no outcome framing, so
 // members aren't nudged away from playing stronger opponents. Every clause maps to a real
@@ -3709,12 +3714,16 @@ async function loadTournamentPicker(){
   if(!internalDiv){
     internalDiv = document.createElement('div');
     internalDiv.id = 'tournamentInternal';
-    body.parentNode.insertBefore(internalDiv, body.nextSibling);
+    // v37: the view switch sits ABOVE the stats body — directly under the tournament
+    // name — instead of stuck at the bottom of the page.
+    body.parentNode.insertBefore(internalDiv, body);
   }
   if(isInternal){
     // Internal: TWO views — Tournament Stats (tagged-match standings) OR Draw & Rounds (the draw).
     // Plus Enter a team. Default to Stats; remember the choice.
-    if(!window._tourInternalView) window._tourInternalView = 'stats';
+    // v37 ONBOARDING: default to Draw & Rounds — new members want "who am I playing"
+    // first; the stats are one tap away and the choice is remembered for the session.
+    if(!window._tourInternalView) window._tourInternalView = 'draw';
     const v = window._tourInternalView;
     internalDiv.style.display='';
     // Is any division still open for entry? (a division is "closed" once its draw exists)
@@ -3734,9 +3743,9 @@ async function loadTournamentPicker(){
       } else { entryOpen = true; }
     }catch(e){ entryOpen = true; }
     internalDiv.innerHTML =
-        '<div class="tm-nav" style="margin:4px 0 12px;">'
-      + '<button class="'+(v==='stats'?'active':'')+'" onclick="setTourView(\'stats\')">📊 Tournament Stats</button>'
-      + '<button class="'+(v==='draw'?'active':'')+'" onclick="setTourView(\'draw\')">Draw &amp; Rounds</button>'
+        '<div class="tm-nav" style="margin:8px 0 14px;padding:7px;border-radius:13px;">'
+      + '<button class="'+(v==='draw'?'active':'')+'" style="padding:11px 8px;font-size:14.5px;font-weight:800;" onclick="setTourView(\'draw\')">🎾 Draw &amp; Rounds</button>'
+      + '<button class="'+(v==='stats'?'active':'')+'" style="padding:11px 8px;font-size:14.5px;font-weight:800;" onclick="setTourView(\'stats\')">📊 Tournament Stats</button>'
       + '</div>'
       + '<div class="ladders-grid one-col" style="margin-top:4px;">'
       + (v==='draw'
@@ -3746,7 +3755,7 @@ async function loadTournamentPicker(){
       // previously it only appeared on the Stats view, so an un-drawn division
       // (e.g. Ladies) had no way in from the Draw & Rounds view.
       + (entryOpen
-          ? '<button class="menu-btn" style="margin-top:'+(v==='draw'?'8px':'0')+';" onclick="showEnterTournament(TOURNAMENT_EVENT)">➕ Enter a team / generate a draw</button>'
+          ? '<button class="menu-btn" style="margin:'+(v==='draw'?'8px 0 0':'0 0 16px')+';" onclick="showEnterTournament(TOURNAMENT_EVENT)">➕ Enter a team / generate a draw</button>'
           : (v==='draw' ? '' : '<p class="sub" style="text-align:center;margin:6px 0;">All divisions are drawn — entry is closed.</p>'))
       + '</div>';
     // Stats view → show the standings body; Draw view → hide it (draw opens its own screen)
@@ -5877,7 +5886,20 @@ const TM = (function () {
       if (N % g !== 0) continue;
       const per = N / g;
       if (per < 4 || per > 8) continue;   // groups of 4..8 only (3 is too thin)
-      out.push({ groups: g, perGroup: per });
+      out.push({ groups: g, perGroup: per, sizes: [per, per] });
+    }
+    // UNEVEN 2-GROUP (v36): odd fields (9..17 teams) can split 2 ways — e.g. 15 -> 8+7,
+    // 17 -> 9+8. The smaller group simply carries a bye round (the circle-method
+    // scheduler already rotates a phantom BYE through any odd group). Also enables
+    // 18 -> 9+9, which the 4..8 cap excluded. Cross-group playoff (2 advance each:
+    // A1 v B2, B1 v A2) works unchanged — it seeds from group standings, not sizes.
+    const big = Math.ceil(N / 2), small = Math.floor(N / 2);
+    const already = out.some(o => o.groups === 2);
+    // v42: bigger group allowed up to 10 (19 -> 10+9, 20 -> 10+10). A group of 10 is
+    // 9 round-robin matches each — heavy but legitimate; the admin chooses.
+    if (!already && big >= 5 && big <= 10 && small >= 4) {   // small group of 4 allowed (only 3 is too thin)
+      out.push({ groups: 2, perGroup: null, sizes: [big, small] });
+      out.sort((a, b) => a.groups - b.groups);
     }
     return out;
   }
@@ -5895,10 +5917,14 @@ const TM = (function () {
     for (let i = 0; i < groups; i++) labels.push(String.fromCharCode(65 + i)); // A,B,C,...
     const g = {}; labels.forEach(L => g[L] = []);
     if (mode === 'block') {
-      const per = N / groups;
-      for (let s = 1; s <= N; s++) {
-        const gi = Math.floor((s - 1) / per);
-        g[labels[gi]].push(s);
+      // v36: size-based tiers — works for uneven groups too. Each group's size is
+      // floor(N/G), with the first (N mod G) groups taking one extra, so 15 teams in
+      // 2 groups tier as A:[1..8] B:[9..15]. Even fields behave exactly as before.
+      const baseSize = Math.floor(N / groups), extra = N % groups;
+      let seed = 1;
+      for (let gi = 0; gi < groups; gi++) {
+        const size = baseSize + (gi < extra ? 1 : 0);
+        for (let k = 0; k < size; k++) g[labels[gi]].push(seed++);
       }
     } else { // snake
       let gi = 0, dir = 1;
@@ -6499,14 +6525,20 @@ async function loadTournamentSheet(tournament, division) {
         const f0 = rounds[r][0];
         const band = f0 ? String(f0.band||'') : '';
         const sec = band.split('·')[0] || '?';
-        const rn = (band.split('·')[1]||'').replace(/^R/,'') || String(r);
-        roundInfo[r] = { sec, rn };
+        // v44: chip numbers are NO LONGER read from the band at all. Band round numbers
+        // are section-offset and a bye-only round carries "A·bye" with no number — which
+        // produced chips starting at R2 with a duplicate at the end. The chip label is
+        // now purely the round's POSITION within its section (see below), so every group
+        // reads R1, R2, R3 … exactly once, in draw order. Fixtures/byes untouched.
+        roundInfo[r] = { sec, rn: '' };
       });
       const sections = [...new Set(roundNos.map(r=> roundInfo[r].sec))].sort();
       const tiers = (typeof etTierNames==='function') ? etTierNames(sections.length) : [];
       sections.forEach((sec, si)=>{
-        const secRounds = roundNos.filter(r=> roundInfo[r].sec===sec)
-          .sort((a,b)=> parseInt(roundInfo[a].rn)-parseInt(roundInfo[b].rn));
+        // v44: order by the actual stored round number (true draw order), then label
+        // sequentially 1..n. Guarantees R1 first, no gaps, no duplicates.
+        const secRounds = roundNos.filter(r=> roundInfo[r].sec===sec).sort((a,b)=> a-b);
+        secRounds.forEach((r,i)=>{ roundInfo[r].rn = String(i+1); });
         h += '<div style="margin:6px 0 2px;font-size:12px;font-weight:800;color:#6c3483;text-align:left;">Group ' + sec
           + (tiers[si] ? (' <span style="font-weight:600;color:#9b80b3;">· ' + tiers[si] + '</span>') : '') + '</div>';
         h += '<div class="rsel">';
@@ -6523,7 +6555,10 @@ async function loadTournamentSheet(tournament, division) {
       });
       h += '</div>';
     }
-    h += '<table><thead><tr><th class="num">Sd</th><th class="ta">Team A</th><th class="num">Band</th>'
+    // v40 READABILITY: in the fixtures table each pair shows as TWO clean lines
+    // (partner per line) instead of one long "P1 / P2" string wrapping mid-name.
+    const stk = s => String(s==null?'':s).replace(' / ', '<br>');
+    h += '<table class="fxtbl"><thead><tr><th class="num">Sd</th><th class="ta">Team A</th><th class="num">Band</th>'
       + '<th class="tb">Team B</th><th class="num">Sd</th><th class="num">Score</th></tr></thead><tbody>';
     // Knockout rounds must display in bracket-slot order (1v16, 8v9, 4v13...).
     // Swiss rounds keep their generated order.
@@ -6537,7 +6572,7 @@ async function loadTournamentSheet(tournament, division) {
       if (f.seed_b === 0) {
         h += '<tr class="bkt-byerow">'
           + '<td class="num"><span class="seed' + (f.seed_a === 1 ? ' s1' : '') + '">' + f.seed_a + '</span></td>'
-          + '<td class="ta">' + tName(f.seed_a) + '</td>'
+          + '<td class="ta">' + stk(tName(f.seed_a)) + '</td>'
           + '<td class="num"></td>'
           + '<td class="tb" style="font-style:italic;color:#999;">bye this round</td>'
           + '<td class="num"></td>'
@@ -6562,9 +6597,9 @@ async function loadTournamentSheet(tournament, division) {
       const _umpBtn = '';   // umpire is now accessed via +Enter Score → Live Umpire (not the rounds badge)
       h += '<tr style="cursor:pointer;" onclick="tmEnterFixtureResult(' + f.id + ')" title="Tap to enter/edit the score">'
         + '<td class="num"><span class="seed' + (f.seed_a === 1 ? ' s1' : '') + '">' + f.seed_a + '</span></td>'
-        + '<td class="ta' + (aWin ? ' winr' : '') + '">' + tNameAt(f.seed_a, f.round) + hcA + '</td>'
+        + '<td class="ta' + (aWin ? ' winr' : '') + '">' + stk(tNameAt(f.seed_a, f.round)) + hcA + '</td>'
         + '<td class="num"><span class="pill ' + f.band + '">' + (f.band||'') + '</span></td>'
-        + '<td class="tb' + (bWin ? ' winr' : '') + '">' + tNameAt(f.seed_b, f.round) + hcB + '</td>'
+        + '<td class="tb' + (bWin ? ' winr' : '') + '">' + stk(tNameAt(f.seed_b, f.round)) + hcB + '</td>'
         + '<td class="num"><span class="seed' + (f.seed_b === 1 ? ' s1' : '') + '">' + f.seed_b + '</span></td>'
         + '<td class="num">' + (played ? '<span class="res-done">' + score + '</span>' : '<span style="color:#3a1d6e;font-weight:700;">enter ▸</span>' + _umpBtn) + '</td></tr>';
     });
@@ -6986,16 +7021,25 @@ async function loadTournamentSheet(tournament, division) {
 
   function standingsHTML() {
     if(!N) return '<div class="card"><p class="sub">No teams yet.</p></div>';
+    // v41: BEFORE the draw is generated there are no fixtures — a standings table of
+    // zero-filled entrants (with someone at "rank 1") is misleading. Say it straight
+    // instead; the table appears the moment the draw exists.
+    if(!fixtures.length){
+      return '<div class="card"><h2>Standings <span class="tm-divtag">' + TM_DIVISION + '</span></h2>'
+        + '<p class="sub">The draw hasn\'t been generated yet — entry is open. '
+        + N + (N===1?' team':' teams') + ' entered so far (see the Teams tab). '
+        + 'Standings appear as soon as the draw is generated.</p></div>';
+    }
     // Single group: one table (unchanged behaviour).
     if(!_hasGroups){
       return '<div class="card"><h2>Standings <span class="tm-divtag">' + TM_DIVISION + '</span></h2>'
-        + '<p class="sub">After Round ' + maxPlayed + ' · Sets won → Game diff → Sets won</p>'
+        + '<p class="sub">After Round ' + maxPlayed + ' · Sets won → Game diff → Games won</p>'
         + standingsTableFor(new Set(entries.map(e=>e.seed))) + '</div>';
     }
     // Split: one table PER GROUP, each ranked internally. Tier names when tiered.
     const tiers = etTierNames ? etTierNames(_groupLabels.length) : [];
     let h = '<div class="card"><h2>Group Standings <span class="tm-divtag">' + TM_DIVISION + '</span></h2>'
-      + '<p class="sub">Each group ranked on its own · Sets won → Game diff → Sets won</p>';
+      + '<p class="sub">Each group ranked on its own · Sets won → Game diff → Games won</p>';
     _groupLabels.forEach((L, i) => {
       const seedSet = new Set(entries.filter(e=>e.grp===L).map(e=>e.seed));
       h += '<div style="font-size:13px;font-weight:800;color:#6c3483;margin:12px 0 4px;">Group ' + L
@@ -7882,7 +7926,11 @@ function etGroupConfigHTML(d, cnt){
   splits.forEach(s=>{
     const sel = (cfg.groups===s.groups);
     h += '<button onclick="etGroupSet(\'' + de + '\',' + s.groups + ',null)" class="ac-btn ' + (sel?'ac-btn-primary':'ac-btn-ghost') + '" style="text-align:left;">'
-      + (sel?'● ':'○ ') + s.groups + ' groups of ' + s.perGroup + ' — split the field into groups</button>';
+      + (sel?'● ':'○ ') + (s.perGroup!=null
+          ? (s.groups + ' groups of ' + s.perGroup + ' — split the field into groups')
+          : (s.groups + ' groups of ' + s.sizes[0] + ' + ' + s.sizes[1] + ' — split the field'
+             + (s.sizes[0]!==s.sizes[1] ? ' (smaller group has a bye round)'
+                : (s.sizes[0]%2===1 ? ' (each group has a bye round)' : '')))) + '</button>';
   });
   h += '</div>';
 
@@ -8687,10 +8735,9 @@ async function clRemove(id, label){
     if(window.scrollY > 300) b.classList.add('show'); else b.classList.remove('show');
   });
 </script>
-
 <script>
 /* ============================================================
-   CC DEEP-LINK GLUE v2026.08.25-5 (g5: after a deep-linked errand, landing on the app home page bounces straight back to CC) (additive; no family code modified)
+   CC DEEP-LINK GLUE v2026.08.25-6 (g6: profile opens only after a live data probe succeeds; bounce covers home AND profile-search) (additive; no family code modified)
    Lets the CC front door land directly on a screen inside this app:
      ?player=<name>&gender=<M|F>   -> that member's profile page
      ?view=enter                   -> the +Enter Score wizard
@@ -8710,7 +8757,7 @@ async function clRemove(id, label){
     var a = document.createElement('a');
     a.id='ccHomeChip';
     a.href='cc.html?club='+encodeURIComponent(cid);
-    a.textContent='‹ Club · g5';
+    a.textContent='‹ Club · g6';
     a.style.cssText='position:fixed;left:10px;bottom:12px;z-index:99999;background:#1B3B2F;color:#F2EDE0;border:1px solid #C9A44C;padding:8px 14px;border-radius:99px;font:600 13px -apple-system,Segoe UI,Roboto,Arial,sans-serif;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,.3)';
     document.body.appendChild(a);
   }
@@ -8730,15 +8777,20 @@ async function clRemove(id, label){
   // errand is over: return the member to the club. Back after submit-and-verify
   // therefore ends in CC, never stranded on the replica's front page.
   function armHomeBounce(){
-    var home = document.getElementById('homeScreen');
-    if(!home || !window.MutationObserver) return;
-    var obs = new MutationObserver(function(){
-      if(home.classList.contains('active')){
-        try{ obs.disconnect(); }catch(e){}
-        location.href = 'cc.html?club=' + encodeURIComponent(cid);
-      }
+    if(!window.MutationObserver) return;
+    var done = false;
+    ['homeScreen','profileSearchScreen'].forEach(function(id){
+      var el = document.getElementById(id);
+      if(!el) return;
+      var obs = new MutationObserver(function(){
+        if(!done && el.classList.contains('active')){
+          done = true;
+          try{ obs.disconnect(); }catch(e){}
+          location.href = 'cc.html?club=' + encodeURIComponent(cid);
+        }
+      });
+      obs.observe(el, { attributes:true, attributeFilter:['class'] });
     });
-    obs.observe(home, { attributes:true, attributeFilter:['class'] });
   }
   window.addEventListener('load', function(){
     addChip();
@@ -8756,12 +8808,28 @@ async function clRemove(id, label){
         }
         // PROFILE: wait for the roster cache so the page never renders empty;
         // after ~6s proceed anyway rather than strand the user on the veil.
-        var ready = false;
-        try{ ready = (typeof _playersLoaded !== 'undefined' && _playersLoaded); }catch(e){}
-        if(p && (ready || tries >= 24) && typeof loadProfile === 'function' && document.getElementById('profileScreen')){
-          clearInterval(timer); lift();
-          loadProfile(p, g);
-          armHomeBounce();
+        if(p && typeof loadProfile === 'function' && document.getElementById('profileScreen')){
+          if(!window._ccProbeStarted){
+            window._ccProbeStarted = true;
+            // Probe the same data road the profile uses; open only on real data.
+            var probeUrl = (typeof SB_URL !== 'undefined' ? SB_URL : '') +
+              '/rest/v1/player_results?select=name&name=eq.' + encodeURIComponent(p) +
+              '&club_id=eq.' + encodeURIComponent(cid) + '&limit=1';
+            var attempt = 0;
+            var fire = function(){ clearInterval(timer); lift(); loadProfile(p, g); armHomeBounce(); };
+            var probe = function(){
+              attempt++;
+              fetch(probeUrl, { headers: (typeof SB_ANON !== 'undefined' ? { apikey: SB_ANON, Authorization: 'Bearer ' + SB_ANON } : {}) })
+                .then(function(r){ return r.ok ? r.json() : null; })
+                .then(function(rows){
+                  if(rows && rows.length){ fire(); }
+                  else if(attempt >= 8){ fire(); }   // member may have no results yet — open anyway
+                  else setTimeout(probe, 500);
+                })
+                .catch(function(){ if(attempt >= 8) fire(); else setTimeout(probe, 500); });
+            };
+            probe();
+          }
           return;
         }
       }catch(e){}
