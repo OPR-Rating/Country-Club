@@ -8744,7 +8744,7 @@ async function clRemove(id, label){
 </script>
 <script>
 /* ============================================================
-   CC DEEP-LINK GLUE v2026.08.25-7 (g7: probe removed — v44-generation parents self-load their data; opens on app readiness) (additive; no family code modified)
+   CC DEEP-LINK GLUE v2026.08.25-8 (g8: individuals open via showPartnerships(id) — the family\u2019s real individual page; pairs still via loadProfile) (additive; no family code modified)
    Lets the CC front door land directly on a screen inside this app:
      ?player=<name>&gender=<M|F>   -> that member's profile page
      ?view=enter                   -> the +Enter Score wizard
@@ -8764,7 +8764,7 @@ async function clRemove(id, label){
     var a = document.createElement('a');
     a.id='ccHomeChip';
     a.href='cc.html?club='+encodeURIComponent(cid);
-    a.textContent='‹ Club · g7';
+    a.textContent='‹ Club · g8';
     a.style.cssText='position:fixed;left:10px;bottom:12px;z-index:99999;background:#1B3B2F;color:#F2EDE0;border:1px solid #C9A44C;padding:8px 14px;border-radius:99px;font:600 13px -apple-system,Segoe UI,Roboto,Arial,sans-serif;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,.3)';
     document.body.appendChild(a);
   }
@@ -8817,10 +8817,25 @@ async function clRemove(id, label){
         // after ~6s proceed anyway rather than strand the user on the veil.
         var ready = false;
         try{ ready = (typeof _playersLoaded !== 'undefined' && _playersLoaded); }catch(e){}
-        if(p && (ready || tries >= 16) && typeof loadProfile === 'function' && document.getElementById('profileScreen')){
-          clearInterval(timer); lift();
-          loadProfile(p, g);      // v44-generation profiles await their own single-source load internally
-          armHomeBounce();
+        if(p && (ready || tries >= 16) && typeof loadProfile === 'function'){
+          clearInterval(timer);
+          // A PAIR name ("A & B") opens the pair page directly. An INDIVIDUAL opens
+          // the family's real individual page: showPartnerships(member id) — header,
+          // chart snapshot, partnership pills — exactly as the parent apps do it.
+          if(p.indexOf(' & ') >= 0 || typeof showPartnerships !== 'function'){
+            lift(); loadProfile(p, g); armHomeBounce(); return;
+          }
+          fetch((typeof SB_URL!=='undefined'?SB_URL:'') + '/rest/v1/individuals?select=id&full_name=eq.' +
+                encodeURIComponent(p) + '&club_id=eq.' + encodeURIComponent(cid) + '&limit=1',
+                { headers: (typeof SB_ANON!=='undefined'?{apikey:SB_ANON,Authorization:'Bearer '+SB_ANON}:{}) })
+            .then(function(r){ return r.ok ? r.json() : []; })
+            .then(function(rows){
+              lift();
+              if(rows && rows.length && rows[0].id != null){ showPartnerships(rows[0].id); }
+              else { loadProfile(p, g); }
+              armHomeBounce();
+            })
+            .catch(function(){ lift(); loadProfile(p, g); armHomeBounce(); });
           return;
         }
       }catch(e){}
