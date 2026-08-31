@@ -2981,7 +2981,7 @@ async function loadFormWall(type, title) {
 const SB_URL = "https://farlrjnaeojmypzbplmz.supabase.co";
 const SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhcmxyam5hZW9qbXlwemJwbG16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNDkyNjYsImV4cCI6MjA5NjkyNTI2Nn0.SL18KYq6F97vsmcazWMsLcwTJm82nttrvXLpJSKiOsA";
 /* ============================================================
-   CC ADAPTER SHIM v2026.08.25-3 — COUNTRY CLUB · PADEL LEG (tournament/ladder -> physical cc_padel_* twins; functions -> padel trio)
+   CC ADAPTER SHIM v2026.08.26-4 (family admin -> cc_admin_padel; archive physical) — COUNTRY CLUB · PADEL LEG (tournament/ladder -> physical cc_padel_* twins; functions -> padel trio)
    This file is a FORK of laptop-opr.html (OPR master). The OPR
    entry flow, pair auto-birth, Live Umpire, guards and screens
    below run UNMODIFIED. This shim intercepts every Supabase call:
@@ -2997,16 +2997,17 @@ const SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsIn
   var CC_ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqbWJudmlrcmRnbm9tamh0a2dmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzOTE0MzEsImV4cCI6MjEwMDk2NzQzMX0.vR8xlVFjV6jXW-pAclGjM74HqmWSKVpsacFjM-dCIJI";
   var DISC="padel";
   var TBL={ "matches":1,"players":1,"players_public":1,"player_results":1,
-            "doubles_results":1,"tournament_results":1,"tournament_archive":1,
+            "doubles_results":1,"tournament_results":1,
             "live_matches":1,"individuals":0,"clubs":0 };
   // Physical per-discipline twins (no discipline filter — the table IS the scope)
-  var PHYS={ "tournaments":"cc_padel_tournaments",
+  var PHYS={ "tournament_archive":"cc_padel_tournament_archive",
+             "tournaments":"cc_padel_tournaments",
              "tournament_entries":"cc_padel_tournament_entries",
              "tournament_fixtures":"cc_padel_tournament_fixtures",
              "club_ladder":"cc_padel_club_ladder",
              "club_ladder_state":"cc_padel_club_ladder_state" };
   var FN={ "submit_match":"cc_submit_match","recompute":"cc_recompute_padel",
-           "admin":"cc_admin","tournament":"cc_tournament_padel","ladder":"cc_ladder_padel" };
+           "admin":"cc_admin_padel","tournament":"cc_tournament_padel","ladder":"cc_ladder_padel" };
   var _fetch=window.fetch.bind(window);
   window.fetch=function(input, init){
     try{
