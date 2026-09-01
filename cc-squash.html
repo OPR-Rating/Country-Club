@@ -2838,7 +2838,7 @@ async function loadFormWall(type, title) {
 const SB_URL = "https://djmbnvikrdgnomjhtkgf.supabase.co";
 const SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqbWJudmlrcmRnbm9tamh0a2dmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzOTE0MzEsImV4cCI6MjEwMDk2NzQzMX0.vR8xlVFjV6jXW-pAclGjM74HqmWSKVpsacFjM-dCIJI";
 /* ============================================================
-   CC ADAPTER SHIM v2026.08.24-2 — COUNTRY CLUB · SQUASH LEG
+   CC ADAPTER SHIM v2026.08.26-5 (squash trio wired: admin/tournament/ladder + physical twins) — COUNTRY CLUB · SQUASH LEG
    This file is a FORK of laptop-osr.html (OSR master). The OSR
    entry flow, Live Umpire + Realtime live mirror, guards and
    screens below run UNMODIFIED (one exception: the Realtime
@@ -2857,11 +2857,16 @@ const SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsIn
   var CC_ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqbWJudmlrcmRnbm9tamh0a2dmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzOTE0MzEsImV4cCI6MjEwMDk2NzQzMX0.vR8xlVFjV6jXW-pAclGjM74HqmWSKVpsacFjM-dCIJI";
   var DISC="squash";
   var TBL={ "matches":1,"players":1,"players_public":1,"player_results":1,
-            "doubles_results":1,"tournament_results":1,"tournament_archive":1,
-            "tournaments":1,"tournament_entries":1,"tournament_fixtures":1,
-            "club_ladder":1,"club_ladder_state":1,"live_matches":1,
+            "doubles_results":1,"tournament_results":1,"live_matches":1,
             "individuals":0,"clubs":0 };
-  var FN={ "submit_match":"cc_submit_match","recompute":"cc_recompute_squash","admin":"cc_admin" };
+  var PHYS={ "tournaments":"cc_squash_tournaments",
+             "tournament_entries":"cc_squash_tournament_entries",
+             "tournament_fixtures":"cc_squash_tournament_fixtures",
+             "tournament_archive":"cc_squash_tournament_archive",
+             "club_ladder":"cc_squash_club_ladder",
+             "club_ladder_state":"cc_squash_club_ladder_state" };
+  var FN={ "submit_match":"cc_submit_match","recompute":"cc_recompute_squash",
+           "admin":"cc_admin_squash","tournament":"cc_tournament_squash","ladder":"cc_ladder_squash" };
   var _fetch=window.fetch.bind(window);
   window.fetch=function(input, init){
     try{
@@ -2872,7 +2877,9 @@ const SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsIn
         if(u.pathname.indexOf("/rest/v1/")===0){
           var t=u.pathname.slice(9);
           var q=u.search?u.search.slice(1):"";
-          if(TBL.hasOwnProperty(t)){
+          if(PHYS.hasOwnProperty(t)){
+            nu=CC_URL+"/rest/v1/"+PHYS[t]+(q?"?"+q:"");
+          } else if(TBL.hasOwnProperty(t)){
             if(TBL[t]===1){ q=(q?q+"&":"")+"discipline=eq."+DISC;
               if(init.body && typeof init.body==="string"){
                 try{ var rb=JSON.parse(init.body);
@@ -8814,7 +8821,7 @@ async function clRemove(id, label){
 </script>
 <script>
 /* ============================================================
-   CC DEEP-LINK GLUE v2026.08.26-11 (g11: ?view=admin opens the Control Room pre-unlocked via one-shot session PIN handoff) (g8: individuals open via showPartnerships(id) — the family\u2019s real individual page; pairs still via loadProfile) (additive; no family code modified)
+   CC DEEP-LINK GLUE v2026.08.26-12 (g12: leaving a Control Room returns to CC's Admin, not home) (g8: individuals open via showPartnerships(id) — the family\u2019s real individual page; pairs still via loadProfile) (additive; no family code modified)
    Lets the CC front door land directly on a screen inside this app:
      ?player=<name>&gender=<M|F>   -> that member's profile page
      ?view=enter                   -> the +Enter Score wizard
@@ -8835,8 +8842,9 @@ async function clRemove(id, label){
     a.id='ccHomeChip';
     var back='cc.html?club='+encodeURIComponent(cid);
     if(p && p.indexOf(' & ')<0) back+='&member='+encodeURIComponent(p);
+    if(v==='admin') back+='&view=admin';
     a.href=back;
-    a.textContent='‹ Club · g11';
+    a.textContent='‹ Club · g12';
     a.style.cssText='position:fixed;left:10px;bottom:12px;z-index:99999;background:#1B3B2F;color:#F2EDE0;border:1px solid #C9A44C;padding:8px 14px;border-radius:99px;font:600 13px -apple-system,Segoe UI,Roboto,Arial,sans-serif;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,.3)';
     document.body.appendChild(a);
   }
@@ -8867,6 +8875,7 @@ async function clRemove(id, label){
           try{ obs.disconnect(); }catch(e){}
           var b2='cc.html?club='+encodeURIComponent(cid);
           if(p && p.indexOf(' & ')<0) b2+='&member='+encodeURIComponent(p);
+          if(v==='admin') b2+='&view=admin';
           location.href = b2;
         }
       });

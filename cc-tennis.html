@@ -1716,7 +1716,7 @@ async function loadFormWall(type, title) {
 const SB_URL = "https://pqduivcxwykcixqsfrwi.supabase.co";
 const SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxZHVpdmN4d3lrY2l4cXNmcndpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM4MDYzODgsImV4cCI6MjA5OTM4MjM4OH0.A-0RuaQYIrn67UpQJrt6RXLLHZ3Cn12H375Ejgy77A8";
 /* ============================================================
-   CC ADAPTER SHIM v2026.08.24-2 (players_public + tournament_archive mapped) — COUNTRY CLUB · TENNIS LEG
+   CC ADAPTER SHIM v2026.08.26-5 (tennis trio wired: admin/tournament/ladder + physical twins) (players_public + tournament_archive mapped) — COUNTRY CLUB · TENNIS LEG
    This file is a FORK of laptop-otr.html (OTR master). The OTR
    wizard, Live Umpire, guards and screens below run UNMODIFIED.
    This shim intercepts every Supabase call and redirects it:
@@ -1733,11 +1733,16 @@ const SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsIn
   var DISC="tennis";
   // 1 = cc_ twin + discipline filter/injection; 0 = cc_ twin, club-level (no discipline)
   var TBL={ "matches":1,"players":1,"players_public":1,"player_results":1,
-            "doubles_results":1,"tournament_results":1,"tournament_archive":1,
-            "tournaments":1,"tournament_entries":1,"tournament_fixtures":1,
-            "club_ladder":1,"club_ladder_state":1,"live_matches":1,
+            "doubles_results":1,"tournament_results":1,"live_matches":1,
             "individuals":0,"clubs":0 };
-  var FN={ "submit_match":"cc_submit_match","recompute":"cc_recompute_tennis","admin":"cc_admin" };
+  var PHYS={ "tournaments":"cc_tennis_tournaments",
+             "tournament_entries":"cc_tennis_tournament_entries",
+             "tournament_fixtures":"cc_tennis_tournament_fixtures",
+             "tournament_archive":"cc_tennis_tournament_archive",
+             "club_ladder":"cc_tennis_club_ladder",
+             "club_ladder_state":"cc_tennis_club_ladder_state" };
+  var FN={ "submit_match":"cc_submit_match","recompute":"cc_recompute_tennis",
+           "admin":"cc_admin_tennis","tournament":"cc_tournament_tennis","ladder":"cc_ladder_tennis" };
   var _fetch=window.fetch.bind(window);
   window.fetch=function(input, init){
     try{
@@ -1748,7 +1753,9 @@ const SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsIn
         if(u.pathname.indexOf("/rest/v1/")===0){
           var t=u.pathname.slice(9); // table name (pathname carries no query)
           var q=u.search?u.search.slice(1):"";
-          if(TBL.hasOwnProperty(t)){
+          if(PHYS.hasOwnProperty(t)){
+            nu=CC_URL+"/rest/v1/"+PHYS[t]+(q?"?"+q:"");
+          } else if(TBL.hasOwnProperty(t)){
             if(TBL[t]===1){ q=(q?q+"&":"")+"discipline=eq."+DISC;
               // inserts/updates to a discipline-split table carry the tag too
               if(init.body && typeof init.body==="string"){
@@ -7987,7 +7994,7 @@ async function clRemove(id, label){
 
 <script>
 /* ============================================================
-   CC DEEP-LINK GLUE v2026.08.26-11 (g11: ?view=admin opens the Control Room pre-unlocked via one-shot session PIN handoff) (g8: individuals open via showPartnerships(id) — the family\u2019s real individual page; pairs still via loadProfile) (additive; no family code modified)
+   CC DEEP-LINK GLUE v2026.08.26-12 (g12: leaving a Control Room returns to CC's Admin, not home) (g8: individuals open via showPartnerships(id) — the family\u2019s real individual page; pairs still via loadProfile) (additive; no family code modified)
    Lets the CC front door land directly on a screen inside this app:
      ?player=<name>&gender=<M|F>   -> that member's profile page
      ?view=enter                   -> the +Enter Score wizard
@@ -8008,8 +8015,9 @@ async function clRemove(id, label){
     a.id='ccHomeChip';
     var back='cc.html?club='+encodeURIComponent(cid);
     if(p && p.indexOf(' & ')<0) back+='&member='+encodeURIComponent(p);
+    if(v==='admin') back+='&view=admin';
     a.href=back;
-    a.textContent='‹ Club · g11';
+    a.textContent='‹ Club · g12';
     a.style.cssText='position:fixed;left:10px;bottom:12px;z-index:99999;background:#1B3B2F;color:#F2EDE0;border:1px solid #C9A44C;padding:8px 14px;border-radius:99px;font:600 13px -apple-system,Segoe UI,Roboto,Arial,sans-serif;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,.3)';
     document.body.appendChild(a);
   }
@@ -8040,6 +8048,7 @@ async function clRemove(id, label){
           try{ obs.disconnect(); }catch(e){}
           var b2='cc.html?club='+encodeURIComponent(cid);
           if(p && p.indexOf(' & ')<0) b2+='&member='+encodeURIComponent(p);
+          if(v==='admin') b2+='&view=admin';
           location.href = b2;
         }
       });

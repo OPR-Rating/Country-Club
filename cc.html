@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Country Club</title>
 <!--
-  VERSION: CC-FRONTDOOR v2026.08.26-20  (Club Office + pre-unlocked Control Rooms + release-stamped replica links: no cache layer can serve a stale replica again)  (?member= opens that member's honour board — replica back buttons land here)  (padel plaque computed by the family's v44 single-source algorithm: seed + replayed match deltas, pairs expanded via member links — no dependency on any write-back column)  (dynamic member search on Profiles)  (admin: per-discipline Rebuild ratings buttons)  (deep links: plaques open the member INSIDE the replica; sport cards offer direct +Score)  (SLIM FRONT DOOR: identity + honour board + admin. Entry/stats/reporting live in the three family replicas — cc-padel.html / cc-tennis.html / cc-squash.html — per the replica architecture.)
+  VERSION: CC-FRONTDOOR v2026.08.26-21  (returning from a Control Room reopens the Office's Admin, unlocked)  (?member= opens that member's honour board — replica back buttons land here)  (padel plaque computed by the family's v44 single-source algorithm: seed + replayed match deltas, pairs expanded via member links — no dependency on any write-back column)  (dynamic member search on Profiles)  (admin: per-discipline Rebuild ratings buttons)  (deep links: plaques open the member INSIDE the replica; sport cards offer direct +Score)  (SLIM FRONT DOOR: identity + honour board + admin. Entry/stats/reporting live in the three family replicas — cc-padel.html / cc-tennis.html / cc-squash.html — per the replica architecture.)
   COUNTRY CLUB (CC) · single front door · one club register, three disciplines.
   URL pattern: cc.html?club=1 (one file serves every country club — the header
   reads the club's name from cc_clubs, so "Farland Country Club" is just data).
@@ -83,7 +83,7 @@ tr.tap{cursor:pointer}tr.tap:active{background:var(--linen)}
 <header>
   <h1 id="clubName" class="serif">Country Club</h1>
   <div class="sub">One club · Three disciplines · One rating home</div>
-  <div style="font-size:.62rem;color:#7a917f;margin-top:4px;letter-spacing:1px">v2026.08.26-20</div>
+  <div style="font-size:.62rem;color:#7a917f;margin-top:4px;letter-spacing:1px">v2026.08.26-21</div>
 </header>
 <nav id="nav">
   <button data-v="home" class="on">Home</button>
@@ -99,7 +99,7 @@ var SB_URL="https://djmbnvikrdgnomjhtkgf.supabase.co";
 var SB_ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqbWJudmlrcmRnbm9tamh0a2dmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzOTE0MzEsImV4cCI6MjEwMDk2NzQzMX0.vR8xlVFjV6jXW-pAclGjM74HqmWSKVpsacFjM-dCIJI";
 var CID=(function(){ var m=(location.search||"").match(/[?&]club=(\d+)/); return m?parseInt(m[1],10):1; })();
 var DISCS=["padel","tennis","squash"];
-var REL="g11";  // replica release stamp — bump with each replica build; busts every cache layer
+var REL="g12";  // replica release stamp — bump with each replica build; busts every cache layer
 var DLABEL={padel:"Padel",tennis:"Tennis",squash:"Squash"};
 var DENGINE={padel:"OPR engine",tennis:"OTR engine",squash:"OSR engine"};
 
@@ -119,12 +119,21 @@ var S={view:"home",disc:null,members:[],pairs:[],club:null,profName:null,profDis
 
 /* ================= BOOT ================= */
 var MEMBER_PARAM=(function(){ var m=(location.search||"").match(/[?&]member=([^&]+)/); return m?decodeURIComponent(m[1]):null; })();
+var ADMIN_RETURN=/[?&]view=admin(&|$)/.test(location.search||"");
 function boot(){
   rest("cc_clubs?id=eq."+CID+"&select=id,name").then(function(rows){
     S.club=(rows&&rows[0])||null;
     document.getElementById("clubName").textContent=S.club?S.club.name:"Country Club (club "+CID+" not found)";
   });
-  if(MEMBER_PARAM){
+  if(ADMIN_RETURN){
+    S.view="admin";
+    Array.prototype.forEach.call(document.querySelectorAll("#nav button"),function(x){x.classList.toggle("on",x.getAttribute("data-v")==="admin");});
+    render();
+    try{
+      var op=sessionStorage.getItem("cc_office_pin");
+      if(op){ var pi=document.getElementById("aPin"); if(pi){ pi.value=op; aUnlock(); } }
+    }catch(e){}
+  } else if(MEMBER_PARAM){
     S.view="profile"; S.profName=MEMBER_PARAM;
     Array.prototype.forEach.call(document.querySelectorAll("#nav button"),function(x){x.classList.toggle("on",x.getAttribute("data-v")==="profile");});
     document.getElementById("main").innerHTML='<div class="card"><div class="muted">Opening profile…</div></div>';
@@ -172,7 +181,7 @@ function vHome(m){
 }
 function goSport(d){ location.href="cc-"+d+".html?club="+CID+"&r="+REL; }
 function goControl(d){
-  try{ sessionStorage.setItem("cc_cr_pin", S.adminPin||""); }catch(e){}
+  try{ sessionStorage.setItem("cc_cr_pin", S.adminPin||""); sessionStorage.setItem("cc_office_pin", S.adminPin||""); }catch(e){}
   location.href="cc-"+d+".html?club="+CID+"&view=admin&r="+REL;
 }
 function goEnter(ev,d){ ev.stopPropagation(); location.href="cc-"+d+".html?club="+CID+"&view=enter&r="+REL; }
