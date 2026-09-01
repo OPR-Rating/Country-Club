@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Country Club</title>
 <!--
-  VERSION: CC-FRONTDOOR v2026.09.01-26  (g17: DEPARTURE VEIL on every sport-card / Control-Room / profile hop — branded green shown on click, before navigation, matching the replicas’ veils end-to-end)  (g16: REL bumped; club name handed to the replicas’ branded veils via sessionStorage)  (g15 sport cards: full-width + Enter Score, then Ratings | Tournaments buttons deep-linking into the replicas via ?view=ratings / ?view=tournaments; "Standings & more" and goSport removed — the front door never links to a replica home page)  (silent admin return; member directory in the Office; pill back-link; secondary button renamed; rebuild card removed)  (?member= opens that member's honour board — replica back buttons land here)  (padel plaque computed by the family's v44 single-source algorithm: seed + replayed match deltas, pairs expanded via member links — no dependency on any write-back column)  (dynamic member search on Profiles)  (admin: per-discipline Rebuild ratings buttons)  (deep links: plaques open the member INSIDE the replica; sport cards offer direct +Score)  (SLIM FRONT DOOR: identity + honour board + admin. Entry/stats/reporting live in the three family replicas — cc-padel.html / cc-tennis.html / cc-squash.html — per the replica architecture.)
+  VERSION: CC-FRONTDOOR v2026.09.01-27  (g18: silent-unlock RACE fixed — the parallel roster render can no longer paint the PIN gate over an in-flight admin return; name-blink fixed — last known club name painted from localStorage before the fetch; on-page banner stamp now tracks the build)  (g17: DEPARTURE VEIL on every sport-card / Control-Room / profile hop — branded green shown on click, before navigation, matching the replicas’ veils end-to-end)  (g16: REL bumped; club name handed to the replicas’ branded veils via sessionStorage)  (g15 sport cards: full-width + Enter Score, then Ratings | Tournaments buttons deep-linking into the replicas via ?view=ratings / ?view=tournaments; "Standings & more" and goSport removed — the front door never links to a replica home page)  (silent admin return; member directory in the Office; pill back-link; secondary button renamed; rebuild card removed)  (?member= opens that member's honour board — replica back buttons land here)  (padel plaque computed by the family's v44 single-source algorithm: seed + replayed match deltas, pairs expanded via member links — no dependency on any write-back column)  (dynamic member search on Profiles)  (admin: per-discipline Rebuild ratings buttons)  (deep links: plaques open the member INSIDE the replica; sport cards offer direct +Score)  (SLIM FRONT DOOR: identity + honour board + admin. Entry/stats/reporting live in the three family replicas — cc-padel.html / cc-tennis.html / cc-squash.html — per the replica architecture.)
   COUNTRY CLUB (CC) · single front door · one club register, three disciplines.
   URL pattern: cc.html?club=1 (one file serves every country club — the header
   reads the club's name from cc_clubs, so "Farland Country Club" is just data).
@@ -83,7 +83,7 @@ tr.tap{cursor:pointer}tr.tap:active{background:var(--linen)}
 <header>
   <h1 id="clubName" class="serif">Country Club</h1>
   <div class="sub">One club · Three disciplines · One rating home</div>
-  <div style="font-size:.62rem;color:#7a917f;margin-top:4px;letter-spacing:1px">v2026.08.26-22</div>
+  <div style="font-size:.62rem;color:#7a917f;margin-top:4px;letter-spacing:1px">v2026.09.01-27</div>
 </header>
 <nav id="nav">
   <button data-v="home" class="on">Home</button>
@@ -121,19 +121,33 @@ var S={view:"home",disc:null,members:[],pairs:[],club:null,profName:null,profDis
 var MEMBER_PARAM=(function(){ var m=(location.search||"").match(/[?&]member=([^&]+)/); return m?decodeURIComponent(m[1]):null; })();
 var ADMIN_RETURN=/[?&]view=admin(&|$)/.test(location.search||"");
 function boot(){
+  // g18 NAME-BLINK FIX: the static header says "Country Club" until the database answers,
+  // so every refresh blinked Country Club → demo. Paint the LAST KNOWN name for this club
+  // immediately (localStorage, per club id); the fetch below refreshes and re-caches it.
+  try{
+    var _cn=localStorage.getItem("cc_name_"+CID);
+    if(_cn){ document.getElementById("clubName").textContent=_cn; sessionStorage.setItem("cc_club_name",_cn); }
+  }catch(e){}
   rest("cc_clubs?id=eq."+CID+"&select=id,name").then(function(rows){
     S.club=(rows&&rows[0])||null;
     document.getElementById("clubName").textContent=S.club?S.club.name:"Country Club (club "+CID+" not found)";
     // g16: hand the club name to the replicas' branded veils (session only, never in a URL)
-    try{ if(S.club&&S.club.name) sessionStorage.setItem("cc_club_name", S.club.name); }catch(e){}
+    try{ if(S.club&&S.club.name){ sessionStorage.setItem("cc_club_name", S.club.name); localStorage.setItem("cc_name_"+CID, S.club.name); } }catch(e){}
   });
   if(ADMIN_RETURN){
     S.view="admin";
     Array.prototype.forEach.call(document.querySelectorAll("#nav button"),function(x){x.classList.toggle("on",x.getAttribute("data-v")==="admin");});
     var op=null; try{ op=sessionStorage.getItem("cc_office_pin"); }catch(e){}
     if(op){
-      document.getElementById("main").innerHTML='<div class="card"><div class="muted">Opening admin…</div></div>';
+      // g18: mark the silent unlock IN FLIGHT so the parallel roster load cannot stomp
+      // this screen with the locked gate (that was the gate flash on every admin return).
+      S._silentUnlock=true;
+      document.getElementById("main").innerHTML='<div class="card" style="text-align:center;padding:38px 16px">'
+        +'<div style="width:26px;height:26px;margin:0 auto 14px;border:3px solid rgba(201,164,76,.35);border-top-color:#C9A44C;border-radius:50%;animation:ccspin .9s linear infinite"></div>'
+        +'<div class="muted">Opening admin…</div><style>@keyframes ccspin{to{transform:rotate(360deg)}}</style></div>';
       aUnlock(op);
+      // failsafe: if the PIN no longer verifies (changed/revoked), fall back to the gate.
+      setTimeout(function(){ if(S._silentUnlock && !S.adminOpen){ S._silentUnlock=false; render(); } }, 8000);
     } else { render(); }
   } else if(MEMBER_PARAM){
     S.view="profile"; S.profName=MEMBER_PARAM;
@@ -142,6 +156,7 @@ function boot(){
   } else { render(); }
   loadRoster().then(function(){
     if(MEMBER_PARAM && !S.members.some(function(x){return x.full_name===MEMBER_PARAM;})){ S.view="home"; S.profName=null; }
+    if(S._silentUnlock && !S.adminOpen) return;   // g18: afterUnlock() renders when ready
     render();
   });
 }
@@ -429,6 +444,7 @@ function aUnlock(pinArg){
   });
 }
 function afterUnlock(){
+  S._silentUnlock=false;   // g18: unlock landed — rendering is safe again
   if(S.adminClub && S.adminClub.id!==CID){
     // the PIN belongs to a different club than the page URL — follow the PIN
     location.search="?club="+S.adminClub.id;
