@@ -8871,7 +8871,7 @@ async function clRemove(id, label){
 </script>
 <script>
 /* ============================================================
-   CC DEEP-LINK GLUE v2026.09.01-17 (g17: EARLY VEIL — top-of-body snippet paints club green and hides the family app from the first frame on any deep link, lifted only when the destination stands; cc.html shows the same veil ON CLICK, so cc → replica → destination is one unbroken green surface with no home flash in either document) (g16: BRANDED VEIL — club name serif + gold spinner + named destination, club name via sessionStorage cc_club_name; return links to cc.html cache-stamped &r=g16 so a stale cached front door can never flash its gate on the way back) (g15: ?view=ratings -> laddersScreen, ?view=tournaments -> tournamentScreen — the sport-card destinations; front door no longer links to replica home pages) (g14: chip moved top-right — clear of every family footer/branding zone) (g13: veil held through admin unlock and profile paint — no gate/stutter flashes) (g8: individuals open via showPartnerships(id) — the family\u2019s real individual page; pairs still via loadProfile) (additive; no family code modified)
+   CC DEEP-LINK GLUE v2026.09.01-18 (g18: RETURN VEIL — the ‹ Club chip and the home-bounce paint the branded green the instant the return begins, so the journey back is bridged exactly like the journey out) (g17: EARLY VEIL — top-of-body snippet paints club green and hides the family app from the first frame on any deep link, lifted only when the destination stands; cc.html shows the same veil ON CLICK, so cc → replica → destination is one unbroken green surface with no home flash in either document) (g16: BRANDED VEIL — club name serif + gold spinner + named destination, club name via sessionStorage cc_club_name; return links to cc.html cache-stamped &r=g16 so a stale cached front door can never flash its gate on the way back) (g15: ?view=ratings -> laddersScreen, ?view=tournaments -> tournamentScreen — the sport-card destinations; front door no longer links to replica home pages) (g14: chip moved top-right — clear of every family footer/branding zone) (g13: veil held through admin unlock and profile paint — no gate/stutter flashes) (g8: individuals open via showPartnerships(id) — the family\u2019s real individual page; pairs still via loadProfile) (additive; no family code modified)
    Lets the CC front door land directly on a screen inside this app:
      ?player=<name>&gender=<M|F>   -> that member's profile page
      ?view=enter                   -> the +Enter Score wizard
@@ -8893,10 +8893,11 @@ async function clRemove(id, label){
     var back='cc.html?club='+encodeURIComponent(cid);
     if(p && p.indexOf(' & ')<0) back+='&member='+encodeURIComponent(p);
     if(v==='admin') back+='&view=admin';
-    back+='&r=g17';   // g16: the RETURN path is cache-stamped like the forward path — a stale
+    back+='&r=g18';   // g16: the RETURN path is cache-stamped like the forward path — a stale
                       // cached cc.html (e.g. pre–silent-admin-return v22) can no longer flash its gate
     a.href=back;
-    a.textContent='‹ Club · g17';
+    a.addEventListener('click', function(){ ccReturnVeil(); });   // g18: green bridge on the way home
+    a.textContent='‹ Club · g18';
     a.style.cssText='position:fixed;right:12px;top:12px;z-index:99999;background:#1B3B2F;color:#F2EDE0;border:1px solid #C9A44C;padding:8px 14px;border-radius:99px;font:600 13px -apple-system,Segoe UI,Roboto,Arial,sans-serif;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,.3)';
     document.body.appendChild(a);
   }
@@ -8933,6 +8934,25 @@ async function clRemove(id, label){
     // only here, already standing on the destination screen. One unbroken surface.
     try{ var _es=document.getElementById('ccEarlyVeilStyle'); if(_es) _es.remove(); }catch(e){}
     if(veil){ try{ veil.remove(); }catch(e){} veil=null; } }
+  function ccReturnVeil(){
+    // g18 RETURN VEIL: the journey BACK to the club is bridged in green exactly like the
+    // journey out — painted the instant the chip is tapped (or the home-bounce fires),
+    // it stays up through this page's unload while cc.html arrives with its own veil.
+    try{
+      var cn=''; try{ cn = sessionStorage.getItem('cc_club_name') || ''; }catch(e){}
+      var _esc=function(x){ return String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;'); };
+      var vv=document.createElement('div');
+      vv.style.cssText='position:fixed;inset:0;z-index:99999;background:#1B3B2F;display:flex;align-items:center;justify-content:center';
+      vv.innerHTML='<div style="text-align:center;color:#F2EDE0;font-family:Georgia,\'Times New Roman\',serif">'
+        +'<div style="font-size:27px;font-weight:700;letter-spacing:.5px;margin-bottom:6px">'+_esc(cn||'Country Club')+'</div>'
+        +'<div style="font-size:11px;letter-spacing:3px;color:#C9A44C;text-transform:uppercase;margin-bottom:22px">One club · Three disciplines</div>'
+        +'<div style="width:26px;height:26px;margin:0 auto 14px;border:3px solid rgba(201,164,76,.25);border-top-color:#C9A44C;border-radius:50%;animation:ccspin .9s linear infinite"></div>'
+        +'<div style="font:600 13px -apple-system,Segoe UI,Roboto,Arial,sans-serif;letter-spacing:1px;opacity:.85">Back to the club…</div></div>';
+      var _s=document.createElement('style'); _s.textContent='@keyframes ccspin{to{transform:rotate(360deg)}}';
+      vv.appendChild(_s); document.body.appendChild(vv);
+    }catch(e){}
+  }
+
   // HOME BOUNCE — armed only after the deep-link target has opened. From then on,
   // whenever this app lands back on its own front page (homeScreen active), the
   // errand is over: return the member to the club. Back after submit-and-verify
@@ -8950,7 +8970,8 @@ async function clRemove(id, label){
           var b2='cc.html?club='+encodeURIComponent(cid);
           if(p && p.indexOf(' & ')<0) b2+='&member='+encodeURIComponent(p);
           if(v==='admin') b2+='&view=admin';
-          b2+='&r=g17';   // g16: cache-stamped return (see chip note)
+          b2+='&r=g18';   // g16: cache-stamped return (see chip note)
+          ccReturnVeil();   // g18: green bridge on the way home
           location.href = b2;
         }
       });

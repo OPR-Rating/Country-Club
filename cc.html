@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Country Club</title>
 <!--
-  VERSION: CC-FRONTDOOR v2026.09.01-28  (g19: STALENESS GUARD — page probes the live repo for the current VSTAMP and re-enters itself once through a stamped URL when older, so bookmarked/unstamped entries can never pin a stale build; FRONT-DOOR DRESSING — the three disciplines in one line on wide screens, Recent Matches across all three sports beneath with a discipline pill per row)  (g18: silent-unlock RACE fixed — the parallel roster render can no longer paint the PIN gate over an in-flight admin return; name-blink fixed — last known club name painted from localStorage before the fetch; on-page banner stamp now tracks the build)  (g17: DEPARTURE VEIL on every sport-card / Control-Room / profile hop — branded green shown on click, before navigation, matching the replicas’ veils end-to-end)  (g16: REL bumped; club name handed to the replicas’ branded veils via sessionStorage)  (g15 sport cards: full-width + Enter Score, then Ratings | Tournaments buttons deep-linking into the replicas via ?view=ratings / ?view=tournaments; "Standings & more" and goSport removed — the front door never links to a replica home page)  (silent admin return; member directory in the Office; pill back-link; secondary button renamed; rebuild card removed)  (?member= opens that member's honour board — replica back buttons land here)  (padel plaque computed by the family's v44 single-source algorithm: seed + replayed match deltas, pairs expanded via member links — no dependency on any write-back column)  (dynamic member search on Profiles)  (admin: per-discipline Rebuild ratings buttons)  (deep links: plaques open the member INSIDE the replica; sport cards offer direct +Score)  (SLIM FRONT DOOR: identity + honour board + admin. Entry/stats/reporting live in the three family replicas — cc-padel.html / cc-tennis.html / cc-squash.html — per the replica architecture.)
+  VERSION: CC-FRONTDOOR v2026.09.01-29  (v29: ARRIVAL VEIL — returns from replicas land in branded green until the destination view stands, lifted by render(); Ratings/Tournaments buttons sized to fit the three-across cards; Recent Matches now the family’s expandable rows — tap for per-set pills in the discipline colour + Sets · Games, exactly as OPR/OTR/OSR do)  (g19: STALENESS GUARD — page probes the live repo for the current VSTAMP and re-enters itself once through a stamped URL when older, so bookmarked/unstamped entries can never pin a stale build; FRONT-DOOR DRESSING — the three disciplines in one line on wide screens, Recent Matches across all three sports beneath with a discipline pill per row)  (g18: silent-unlock RACE fixed — the parallel roster render can no longer paint the PIN gate over an in-flight admin return; name-blink fixed — last known club name painted from localStorage before the fetch; on-page banner stamp now tracks the build)  (g17: DEPARTURE VEIL on every sport-card / Control-Room / profile hop — branded green shown on click, before navigation, matching the replicas’ veils end-to-end)  (g16: REL bumped; club name handed to the replicas’ branded veils via sessionStorage)  (g15 sport cards: full-width + Enter Score, then Ratings | Tournaments buttons deep-linking into the replicas via ?view=ratings / ?view=tournaments; "Standings & more" and goSport removed — the front door never links to a replica home page)  (silent admin return; member directory in the Office; pill back-link; secondary button renamed; rebuild card removed)  (?member= opens that member's honour board — replica back buttons land here)  (padel plaque computed by the family's v44 single-source algorithm: seed + replayed match deltas, pairs expanded via member links — no dependency on any write-back column)  (dynamic member search on Profiles)  (admin: per-discipline Rebuild ratings buttons)  (deep links: plaques open the member INSIDE the replica; sport cards offer direct +Score)  (SLIM FRONT DOOR: identity + honour board + admin. Entry/stats/reporting live in the three family replicas — cc-padel.html / cc-tennis.html / cc-squash.html — per the replica architecture.)
   COUNTRY CLUB (CC) · single front door · one club register, three disciplines.
   URL pattern: cc.html?club=1 (one file serves every country club — the header
   reads the club's name from cc_clubs, so "Farland Country Club" is just data).
@@ -81,10 +81,31 @@ tr.tap{cursor:pointer}tr.tap:active{background:var(--linen)}
 </style>
 </head>
 <body>
+<script>
+/* v29 ARRIVAL VEIL: any entry carrying replica params (?member= / ?view=admin / ?r=) is a
+   RETURN journey — paint the branded green before the shell can flash, lifted by render()
+   the moment the destination view stands (8s failsafe so the page can never stay covered). */
+(function(){ try{
+  var q=location.search||"";
+  if(!(/[?&](member|view|r)=/.test(q))) return;
+  var cid=(q.match(/[?&]club=(\d+)/)||[])[1]||"1";
+  var cn=""; try{ cn=localStorage.getItem("cc_name_"+cid)||""; }catch(e){}
+  var esc=function(x){ return String(x).replace(/&/g,"&amp;").replace(/</g,"&lt;"); };
+  var v=document.createElement("div"); v.id="ccArriveVeil";
+  v.style.cssText="position:fixed;inset:0;z-index:99999;background:#1B3B2F;display:flex;align-items:center;justify-content:center";
+  v.innerHTML='<div style="text-align:center;color:#F2EDE0;font-family:Georgia,\'Times New Roman\',serif">'
+    +'<div style="font-size:27px;font-weight:700;letter-spacing:.5px;margin-bottom:6px">'+esc(cn||"Country Club")+'</div>'
+    +'<div style="font-size:11px;letter-spacing:3px;color:#C9A44C;text-transform:uppercase;margin-bottom:22px">One club · Three disciplines</div>'
+    +'<div style="width:26px;height:26px;margin:0 auto;border:3px solid rgba(201,164,76,.25);border-top-color:#C9A44C;border-radius:50%;animation:ccspin .9s linear infinite"></div></div>';
+  var st=document.createElement("style"); st.textContent="@keyframes ccspin{to{transform:rotate(360deg)}}";
+  v.appendChild(st); document.body.appendChild(v);
+  setTimeout(function(){ var e=document.getElementById("ccArriveVeil"); if(e) e.remove(); }, 8000);
+}catch(e){} })();
+</script>
 <header>
   <h1 id="clubName" class="serif">Country Club</h1>
   <div class="sub">One club · Three disciplines · One rating home</div>
-  <div style="font-size:.62rem;color:#7a917f;margin-top:4px;letter-spacing:1px">v2026.09.01-28</div>
+  <div style="font-size:.62rem;color:#7a917f;margin-top:4px;letter-spacing:1px">v2026.09.01-29</div>
 </header>
 <nav id="nav">
   <button data-v="home" class="on">Home</button>
@@ -100,8 +121,8 @@ var SB_URL="https://djmbnvikrdgnomjhtkgf.supabase.co";
 var SB_ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqbWJudmlrcmRnbm9tamh0a2dmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzOTE0MzEsImV4cCI6MjEwMDk2NzQzMX0.vR8xlVFjV6jXW-pAclGjM74HqmWSKVpsacFjM-dCIJI";
 var CID=(function(){ var m=(location.search||"").match(/[?&]club=(\d+)/); return m?parseInt(m[1],10):1; })();
 var DISCS=["padel","tennis","squash"];
-var REL="g17";  // replica release stamp — bump with each replica build; busts every cache layer
-var VSTAMP="v2026.09.01-28";  // build stamp — MUST match the banner div and the VERSION header every build
+var REL="g18";  // replica release stamp — bump with each replica build; busts every cache layer
+var VSTAMP="v2026.09.01-29";  // build stamp — MUST match the banner div and the VERSION header every build
 /* g19 STALENESS GUARD: bookmarks open this page UNSTAMPED, and GitHub Pages lets browsers
    keep that URL for ~10 minutes — so every deploy looked dead on arrival. On load, quietly
    probe the live file (cache-bypassed) for its VSTAMP; if this page is older, re-enter once
@@ -194,11 +215,12 @@ document.getElementById("nav").addEventListener("click",function(e){
 });
 
 /* ================= RENDER ROUTER ================= */
+function ccArriveLift(){ try{ var e=document.getElementById("ccArriveVeil"); if(e) e.remove(); }catch(x){} }
 function render(){
   var m=document.getElementById("main");
-  if(S.view==="home")return vHome(m);
-  if(S.view==="profile")return vProfile(m);
-  if(S.view==="admin")return vAdmin(m);
+  if(S.view==="home"){ vHome(m); ccArriveLift(); return; }
+  if(S.view==="profile"){ vProfile(m); ccArriveLift(); return; }
+  if(S.view==="admin"){ vAdmin(m); ccArriveLift(); return; }
 }
 
 /* ================= HOME — the sport picker ================= */
@@ -211,8 +233,8 @@ function vHome(m){
       +'<button onclick="goEnter(event,\''+d+'\')" style="width:100%;background:rgba(255,255,255,.92);color:#1B3B2F;border:none;padding:12px 8px;border-radius:9px;font-size:.95rem;font-weight:800;cursor:pointer">+ Enter Score</button>'
       +'</div>'
       +'<div style="display:flex;gap:10px;margin-top:10px">'
-      +'<button onclick="goView(\''+d+'\',\'ratings\')" style="flex:1;background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.5);padding:11px 8px;border-radius:9px;font-size:.85rem;font-weight:600;cursor:pointer">Ratings</button>'
-      +'<button onclick="goView(\''+d+'\',\'tournaments\')" style="flex:1;background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.5);padding:11px 8px;border-radius:9px;font-size:.85rem;font-weight:600;cursor:pointer">Tournaments</button>'
+      +'<button onclick="goView(\''+d+'\',\'ratings\')" style="flex:1;background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.5);padding:10px 2px;border-radius:9px;font-size:.76rem;font-weight:600;cursor:pointer;white-space:nowrap">Ratings</button>'
+      +'<button onclick="goView(\''+d+'\',\'tournaments\')" style="flex:1;background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.5);padding:10px 2px;border-radius:9px;font-size:.76rem;font-weight:600;cursor:pointer;white-space:nowrap">Tournaments</button>'
       +'</div></div>';
   });
   h+='</div></div>';
@@ -221,32 +243,59 @@ function vHome(m){
   m.innerHTML=h;
   loadRecentMatches();
 }
-/* g19 RECENT MATCHES — the club's pulse on the front door: latest results across ALL
-   THREE sports, newest first, each row wearing its discipline pill (the existing
-   .pill colours). Padel rows carry the pair name in slot 1 (t1p2 null); tennis/squash
-   doubles carry two individuals per side; singles carry one — side() renders all three. */
+/* v29 RECENT MATCHES — the family pattern ported faithfully (read from the OPR/OTR/OSR
+   forks): each row is EXPANDABLE — header (discipline pill · date · type · caret), the
+   two sides with the set score in gold, and on tap the per-set scores as pills in the
+   discipline’s colour plus the Sets · Games line, exactly as the three parents do.
+   set_scores lives on the match row itself ("6-3,6-4") — no lookup needed. Padel rows
+   carry pair names (display_t1/t2 or slot 1); tennis/squash join two individuals. */
+var DCOLOR={padel:"var(--padel)",tennis:"var(--tennis)",squash:"var(--squash)"};
 function loadRecentMatches(){
   var box=document.getElementById("ccRecent"); if(!box) return;
   if(S._recent){ box.innerHTML=recentHTML(S._recent); return; }
-  rest("cc_matches?club_id=eq."+CID+"&select=discipline,match_date,match_type,t1p1,t1p2,t2p1,t2p2,t1_sets,t2_sets&order=match_date.desc,id.desc&limit=10")
+  rest("cc_matches?club_id=eq."+CID+"&select=discipline,match_date,match_type,event,t1p1,t1p2,t2p1,t2p2,t1_sets,t2_sets,t1_games,t2_games,set_scores,display_t1,display_t2&order=match_date.desc,id.desc&limit=10")
     .then(function(rows){ S._recent=rows||[]; var b=document.getElementById("ccRecent"); if(b) b.innerHTML=recentHTML(S._recent); })
     .catch(function(){ var b=document.getElementById("ccRecent"); if(b) b.innerHTML='<div class="muted">Could not load recent matches.</div>'; });
 }
 function recentHTML(rows){
   if(!rows.length) return '<div class="muted">No matches yet — the first result will appear here.</div>';
-  function side(a,b){ return b ? (esc(a)+' & '+esc(b)) : esc(a||''); }
+  function side(dsp,a,b){ return dsp?esc(dsp):(b?(esc(a)+' & '+esc(b)):esc(a||'')); }
   var h='';
-  rows.forEach(function(r){
-    h+='<div style="display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--linen-2)">'
+  rows.forEach(function(r,idx){
+    var ev=(r.event||'').trim().toLowerCase();
+    var tag = ev==='ladder match' ? '<span style="background:#c4e000;color:#2a3000;font-size:.6rem;font-weight:700;padding:1px 5px;border-radius:4px">L</span>'
+            : (ev && ev!=='social') ? '<span style="background:#6c3483;color:#fff;font-size:.6rem;font-weight:700;padding:1px 5px;border-radius:4px">T</span>'
+            : '<span style="background:#ccc;color:#333;font-size:.6rem;font-weight:700;padding:1px 5px;border-radius:4px">S</span>';
+    h+='<div onclick="ccToggleRecent('+idx+')" style="cursor:pointer;padding:9px 2px;border-bottom:1px solid var(--linen-2)">'
+      +'<div style="display:flex;align-items:center;gap:8px">'
       +'<span class="pill '+esc(r.discipline)+'">'+esc(DLABEL[r.discipline]||r.discipline)+'</span>'
-      +'<div style="flex:1;min-width:0">'
-      +'<div style="font-size:.84rem;font-weight:600;color:#233b30">'+side(r.t1p1,r.t1p2)
-        +' <span style="color:#B8860B;font-weight:800">'+(r.t1_sets||0)+'–'+(r.t2_sets||0)+'</span> '
-        +side(r.t2p1,r.t2p2)+'</div>'
-      +'<div class="muted" style="font-size:.7rem;margin-top:2px">'+esc(r.match_date||'')+(r.match_type?(' · '+esc(r.match_type)):'')+'</div>'
-      +'</div></div>';
+      +'<span class="muted" style="font-size:.7rem">'+esc(r.match_date||'')+'</span>'
+      +'<span class="muted" style="font-size:.7rem">'+esc(r.match_type||'')+'</span>'+tag
+      +'<span id="ccRcaret'+idx+'" style="margin-left:auto;color:#B8860B;font-size:.7rem">\u25bc</span></div>'
+      +'<div style="font-size:.84rem;font-weight:600;color:#233b30;margin-top:3px">'
+      +side(r.display_t1,r.t1p1,r.t1p2)
+      +' <span style="color:#B8860B;font-weight:800">'+(r.t1_sets||0)+'\u2013'+(r.t2_sets||0)+'</span> '
+      +side(r.display_t2,r.t2p1,r.t2p2)+'</div>'
+      +'<div id="ccRdetail'+idx+'" style="display:none;margin-top:6px;padding-top:6px;border-top:1px dashed var(--linen-2);text-align:center"></div>'
+      +'</div>';
   });
   return h;
+}
+function ccToggleRecent(idx){
+  var d=document.getElementById("ccRdetail"+idx), c=document.getElementById("ccRcaret"+idx);
+  if(!d) return;
+  if(d.style.display==="none"){
+    var r=(S._recent||[])[idx]||{};
+    var col=DCOLOR[r.discipline]||"#1B3B2F";
+    var ss=(r.set_scores||"").trim(), pills="";
+    if(ss){
+      pills=ss.split(",").map(function(x){return x.trim();}).filter(function(x){return x;})
+        .map(function(sc){ return '<span style="background:'+col+';color:#fff;border-radius:4px;padding:3px 10px;margin:0 3px;font-size:.78rem;font-weight:700;display:inline-block">'+esc(sc.replace("-","/"))+'</span>'; }).join('');
+    }
+    d.innerHTML=(pills||'<span class="muted" style="font-size:.72rem">Game scores not recorded for this match</span>')
+      +'<div class="muted" style="font-size:.7rem;margin-top:5px">Sets: '+(r.t1_sets||0)+'\u2013'+(r.t2_sets||0)+'  \u00b7  Games: '+(r.t1_games||0)+'\u2013'+(r.t2_games||0)+'</div>';
+    d.style.display="block"; if(c) c.textContent="\u25b2";
+  } else { d.style.display="none"; if(c) c.textContent="\u25bc"; }
 }
 /* g15: the front door never links to a replica's HOME page (it duplicated cc and stranded
    the member) — every sport-card button opens a DESTINATION inside the replica via the
