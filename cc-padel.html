@@ -3046,6 +3046,29 @@ const SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsIn
                 }catch(_e){}
               }
             }
+            if(t==="individuals"){
+              // g20 PER-SPORT SEEDS: family screens ask for seed_rating; PostgREST column
+              // ALIASING serves this sport's own seed under that exact name (seed_rating:seed_DISC),
+              // so every family screen — admin roster, pair birth 60/40, ladder derivation —
+              // reads its own sport's seed with ZERO family-code change. Verified: the forks
+              // use seed_rating in select lists only (never in order/filters), so the alias
+              // is always legal. Applied to the select param alone for safety.
+              q=q.replace(/(select=[^&]*)/, function(m){
+                return (m.indexOf("seed_rating")>=0 && m.indexOf("seed_rating:")<0)
+                  ? m.replace(/seed_rating/g, "seed_rating:seed_"+DISC) : m;
+              });
+              // g21 (WRITE side): a family PATCH/POST of seed_rating on the register is
+              // renamed to this sport's own column, so a Control-Room seed edit touches
+              // THIS sport only (padel's roster follow-up stays fork-side, correctly
+              // padel-scoped; tennis/squash roster sync is the addendum16 trigger's job).
+              if(init.body && typeof init.body==="string" && init.body.indexOf("seed_rating")>=0){
+                try{ var ib=JSON.parse(init.body);
+                  var _fx=function(o){ if(o&&typeof o==="object"&&Object.prototype.hasOwnProperty.call(o,"seed_rating")){ o["seed_"+DISC]=o.seed_rating; delete o.seed_rating; } };
+                  if(Array.isArray(ib)) ib.forEach(_fx); else _fx(ib);
+                  init.body=JSON.stringify(ib);
+                }catch(_e){}
+              }
+            }
             nu=CC_URL+"/rest/v1/cc_"+t+(q?"?"+q:"");
           } else {
             nu=CC_URL+u.pathname+u.search;
@@ -8761,7 +8784,7 @@ async function clRemove(id, label){
 </script>
 <script>
 /* ============================================================
-   CC DEEP-LINK GLUE v2026.09.01-19 (g19: veils lock page overflow — the scrollbar-appearing centre-shift jiggle is gone; Control-Room session PIN no longer one-shot — refresh re-unlocks silently for the life of the tab) (g18: RETURN VEIL — the ‹ Club chip and the home-bounce paint the branded green the instant the return begins, so the journey back is bridged exactly like the journey out) (g17: EARLY VEIL — top-of-body snippet paints club green and hides the family app from the first frame on any deep link, lifted only when the destination stands; cc.html shows the same veil ON CLICK, so cc → replica → destination is one unbroken green surface with no home flash in either document) (g16: BRANDED VEIL — club name serif + gold spinner + named destination, club name via sessionStorage cc_club_name; return links to cc.html cache-stamped &r=g16 so a stale cached front door can never flash its gate on the way back) (g15: ?view=ratings -> laddersScreen, ?view=tournaments -> tournamentScreen — the sport-card destinations; front door no longer links to replica home pages) (g14: chip moved top-right — clear of every family footer/branding zone) (g13: veil held through admin unlock and profile paint — no gate/stutter flashes) (g8: individuals open via showPartnerships(id) — the family\u2019s real individual page; pairs still via loadProfile) (additive; no family code modified)
+   CC DEEP-LINK GLUE v2026.09.01-21 (g21: shim WRITE mapping — register PATCH/POST of seed_rating renamed to seed_padel, so a Control-Room seed edit is per-sport end to end) (g20: SHIM now aliases individuals seed reads to this sport's own column — seed_rating:seed_padel — per-sport seeds served to every family screen unchanged) (g19: veils lock page overflow — the scrollbar-appearing centre-shift jiggle is gone; Control-Room session PIN no longer one-shot — refresh re-unlocks silently for the life of the tab) (g18: RETURN VEIL — the ‹ Club chip and the home-bounce paint the branded green the instant the return begins, so the journey back is bridged exactly like the journey out) (g17: EARLY VEIL — top-of-body snippet paints club green and hides the family app from the first frame on any deep link, lifted only when the destination stands; cc.html shows the same veil ON CLICK, so cc → replica → destination is one unbroken green surface with no home flash in either document) (g16: BRANDED VEIL — club name serif + gold spinner + named destination, club name via sessionStorage cc_club_name; return links to cc.html cache-stamped &r=g16 so a stale cached front door can never flash its gate on the way back) (g15: ?view=ratings -> laddersScreen, ?view=tournaments -> tournamentScreen — the sport-card destinations; front door no longer links to replica home pages) (g14: chip moved top-right — clear of every family footer/branding zone) (g13: veil held through admin unlock and profile paint — no gate/stutter flashes) (g8: individuals open via showPartnerships(id) — the family\u2019s real individual page; pairs still via loadProfile) (additive; no family code modified)
    Lets the CC front door land directly on a screen inside this app:
      ?player=<name>&gender=<M|F>   -> that member's profile page
      ?view=enter                   -> the +Enter Score wizard
@@ -8783,11 +8806,11 @@ async function clRemove(id, label){
     var back='cc.html?club='+encodeURIComponent(cid);
     if(p && p.indexOf(' & ')<0) back+='&member='+encodeURIComponent(p);
     if(v==='admin') back+='&view=admin';
-    back+='&r=g19';   // g16: the RETURN path is cache-stamped like the forward path — a stale
+    back+='&r=g21';   // g16: the RETURN path is cache-stamped like the forward path — a stale
                       // cached cc.html (e.g. pre–silent-admin-return v22) can no longer flash its gate
     a.href=back;
     a.addEventListener('click', function(){ ccReturnVeil(); });   // g18: green bridge on the way home
-    a.textContent='‹ Club · g19';
+    a.textContent='‹ Club · g21';
     a.style.cssText='position:fixed;right:12px;top:12px;z-index:99999;background:#1B3B2F;color:#F2EDE0;border:1px solid #C9A44C;padding:8px 14px;border-radius:99px;font:600 13px -apple-system,Segoe UI,Roboto,Arial,sans-serif;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,.3)';
     document.body.appendChild(a);
   }
@@ -8860,7 +8883,7 @@ async function clRemove(id, label){
           var b2='cc.html?club='+encodeURIComponent(cid);
           if(p && p.indexOf(' & ')<0) b2+='&member='+encodeURIComponent(p);
           if(v==='admin') b2+='&view=admin';
-          b2+='&r=g19';   // g16: cache-stamped return (see chip note)
+          b2+='&r=g21';   // g16: cache-stamped return (see chip note)
           ccReturnVeil();   // g18: green bridge on the way home
           location.href = b2;
         }
