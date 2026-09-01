@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Country Club</title>
 <!--
-  VERSION: CC-FRONTDOOR v2026.09.01-25  (g16: REL bumped; club name handed to the replicas’ branded veils via sessionStorage)  (g15 sport cards: full-width + Enter Score, then Ratings | Tournaments buttons deep-linking into the replicas via ?view=ratings / ?view=tournaments; "Standings & more" and goSport removed — the front door never links to a replica home page)  (silent admin return; member directory in the Office; pill back-link; secondary button renamed; rebuild card removed)  (?member= opens that member's honour board — replica back buttons land here)  (padel plaque computed by the family's v44 single-source algorithm: seed + replayed match deltas, pairs expanded via member links — no dependency on any write-back column)  (dynamic member search on Profiles)  (admin: per-discipline Rebuild ratings buttons)  (deep links: plaques open the member INSIDE the replica; sport cards offer direct +Score)  (SLIM FRONT DOOR: identity + honour board + admin. Entry/stats/reporting live in the three family replicas — cc-padel.html / cc-tennis.html / cc-squash.html — per the replica architecture.)
+  VERSION: CC-FRONTDOOR v2026.09.01-26  (g17: DEPARTURE VEIL on every sport-card / Control-Room / profile hop — branded green shown on click, before navigation, matching the replicas’ veils end-to-end)  (g16: REL bumped; club name handed to the replicas’ branded veils via sessionStorage)  (g15 sport cards: full-width + Enter Score, then Ratings | Tournaments buttons deep-linking into the replicas via ?view=ratings / ?view=tournaments; "Standings & more" and goSport removed — the front door never links to a replica home page)  (silent admin return; member directory in the Office; pill back-link; secondary button renamed; rebuild card removed)  (?member= opens that member's honour board — replica back buttons land here)  (padel plaque computed by the family's v44 single-source algorithm: seed + replayed match deltas, pairs expanded via member links — no dependency on any write-back column)  (dynamic member search on Profiles)  (admin: per-discipline Rebuild ratings buttons)  (deep links: plaques open the member INSIDE the replica; sport cards offer direct +Score)  (SLIM FRONT DOOR: identity + honour board + admin. Entry/stats/reporting live in the three family replicas — cc-padel.html / cc-tennis.html / cc-squash.html — per the replica architecture.)
   COUNTRY CLUB (CC) · single front door · one club register, three disciplines.
   URL pattern: cc.html?club=1 (one file serves every country club — the header
   reads the club's name from cc_clubs, so "Farland Country Club" is just data).
@@ -99,7 +99,7 @@ var SB_URL="https://djmbnvikrdgnomjhtkgf.supabase.co";
 var SB_ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqbWJudmlrcmRnbm9tamh0a2dmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzOTE0MzEsImV4cCI6MjEwMDk2NzQzMX0.vR8xlVFjV6jXW-pAclGjM74HqmWSKVpsacFjM-dCIJI";
 var CID=(function(){ var m=(location.search||"").match(/[?&]club=(\d+)/); return m?parseInt(m[1],10):1; })();
 var DISCS=["padel","tennis","squash"];
-var REL="g16";  // replica release stamp — bump with each replica build; busts every cache layer
+var REL="g17";  // replica release stamp — bump with each replica build; busts every cache layer
 var DLABEL={padel:"Padel",tennis:"Tennis",squash:"Squash"};
 var DENGINE={padel:"OPR engine",tennis:"OTR engine",squash:"OSR engine"};
 
@@ -187,15 +187,33 @@ function vHome(m){
 /* g15: the front door never links to a replica's HOME page (it duplicated cc and stranded
    the member) — every sport-card button opens a DESTINATION inside the replica via the
    glue's deep-link views, each with the veil, the ‹ Club chip and the home-bounce armed. */
-function goView(d,vw){ location.href="cc-"+d+".html?club="+CID+"&view="+vw+"&r="+REL; }
+/* g17 DEPARTURE VEIL: the transition starts the INSTANT the button is pressed — the same
+   branded green as the replicas' veils, so cc → replica → destination is one unbroken
+   surface (cc veil on click → replica early paint → replica veil → destination). */
+function ccDepart(dest,href){
+  try{
+    var cn=(S.club&&S.club.name)||"Country Club";
+    var v=document.createElement("div");
+    v.style.cssText="position:fixed;inset:0;z-index:99998;background:#1B3B2F;display:flex;align-items:center;justify-content:center";
+    v.innerHTML='<div style="text-align:center;color:#F2EDE0;font-family:Georgia,\'Times New Roman\',serif">'
+      +'<div style="font-size:27px;font-weight:700;letter-spacing:.5px;margin-bottom:6px">'+esc(cn)+'</div>'
+      +'<div style="font-size:11px;letter-spacing:3px;color:#C9A44C;text-transform:uppercase;margin-bottom:22px">One club · Three disciplines</div>'
+      +'<div style="width:26px;height:26px;margin:0 auto 14px;border:3px solid rgba(201,164,76,.25);border-top-color:#C9A44C;border-radius:50%;animation:ccspin .9s linear infinite"></div>'
+      +'<div style="font:600 13px -apple-system,Segoe UI,Roboto,Arial,sans-serif;letter-spacing:1px;opacity:.85">Opening '+esc(dest)+'…</div></div>';
+    var st=document.createElement("style"); st.textContent="@keyframes ccspin{to{transform:rotate(360deg)}}";
+    v.appendChild(st); document.body.appendChild(v);
+  }catch(e){}
+  setTimeout(function(){ location.href=href; }, 30);
+}
+function goView(d,vw){ ccDepart(vw==="ratings"?"Ratings":"Tournaments", "cc-"+d+".html?club="+CID+"&view="+vw+"&r="+REL); }
 function goControl(d){
   try{ sessionStorage.setItem("cc_cr_pin", S.adminPin||""); sessionStorage.setItem("cc_office_pin", S.adminPin||""); }catch(e){}
-  location.href="cc-"+d+".html?club="+CID+"&view=admin&r="+REL;
+  ccDepart("Control Room", "cc-"+d+".html?club="+CID+"&view=admin&r="+REL);
 }
-function goEnter(ev,d){ ev.stopPropagation(); location.href="cc-"+d+".html?club="+CID+"&view=enter&r="+REL; }
+function goEnter(ev,d){ ev.stopPropagation(); ccDepart("Score entry", "cc-"+d+".html?club="+CID+"&view=enter&r="+REL); }
 function goProfile(d){
   var me=S.members.find(function(x){return x.full_name===S.profName;})||{};
-  location.href="cc-"+d+".html?club="+CID+"&player="+encodeURIComponent(S.profName)+"&gender="+encodeURIComponent(me.gender||"M")+"&r="+REL;
+  ccDepart(S.profName, "cc-"+d+".html?club="+CID+"&player="+encodeURIComponent(S.profName)+"&gender="+encodeURIComponent(me.gender||"M")+"&r="+REL);
 }
 
 
