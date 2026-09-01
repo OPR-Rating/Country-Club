@@ -7994,7 +7994,7 @@ async function clRemove(id, label){
 
 <script>
 /* ============================================================
-   CC DEEP-LINK GLUE v2026.08.27-13 (g13: veil held through admin unlock and profile paint — no gate/stutter flashes) (g8: individuals open via showPartnerships(id) — the family\u2019s real individual page; pairs still via loadProfile) (additive; no family code modified)
+   CC DEEP-LINK GLUE v2026.08.27-14 (g14: chip moved top-right — clear of every family footer/branding zone) (g13: veil held through admin unlock and profile paint — no gate/stutter flashes) (g8: individuals open via showPartnerships(id) — the family\u2019s real individual page; pairs still via loadProfile) (additive; no family code modified)
    Lets the CC front door land directly on a screen inside this app:
      ?player=<name>&gender=<M|F>   -> that member's profile page
      ?view=enter                   -> the +Enter Score wizard
@@ -8017,8 +8017,8 @@ async function clRemove(id, label){
     if(p && p.indexOf(' & ')<0) back+='&member='+encodeURIComponent(p);
     if(v==='admin') back+='&view=admin';
     a.href=back;
-    a.textContent='‹ Club · g13';
-    a.style.cssText='position:fixed;left:10px;bottom:12px;z-index:99999;background:#1B3B2F;color:#F2EDE0;border:1px solid #C9A44C;padding:8px 14px;border-radius:99px;font:600 13px -apple-system,Segoe UI,Roboto,Arial,sans-serif;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,.3)';
+    a.textContent='‹ Club · g14';
+    a.style.cssText='position:fixed;right:12px;top:12px;z-index:99999;background:#1B3B2F;color:#F2EDE0;border:1px solid #C9A44C;padding:8px 14px;border-radius:99px;font:600 13px -apple-system,Segoe UI,Roboto,Arial,sans-serif;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,.3)';
     document.body.appendChild(a);
   }
   // Boot veil — only for deep links: covers the home-screen flash until the

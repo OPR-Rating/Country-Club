@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Country Club</title>
 <!--
-  VERSION: CC-FRONTDOOR v2026.08.27-22  (silent admin return; member directory in the Office; pill back-link; secondary button renamed; rebuild card removed)  (?member= opens that member's honour board — replica back buttons land here)  (padel plaque computed by the family's v44 single-source algorithm: seed + replayed match deltas, pairs expanded via member links — no dependency on any write-back column)  (dynamic member search on Profiles)  (admin: per-discipline Rebuild ratings buttons)  (deep links: plaques open the member INSIDE the replica; sport cards offer direct +Score)  (SLIM FRONT DOOR: identity + honour board + admin. Entry/stats/reporting live in the three family replicas — cc-padel.html / cc-tennis.html / cc-squash.html — per the replica architecture.)
+  VERSION: CC-FRONTDOOR v2026.08.27-23  (silent admin return; member directory in the Office; pill back-link; secondary button renamed; rebuild card removed)  (?member= opens that member's honour board — replica back buttons land here)  (padel plaque computed by the family's v44 single-source algorithm: seed + replayed match deltas, pairs expanded via member links — no dependency on any write-back column)  (dynamic member search on Profiles)  (admin: per-discipline Rebuild ratings buttons)  (deep links: plaques open the member INSIDE the replica; sport cards offer direct +Score)  (SLIM FRONT DOOR: identity + honour board + admin. Entry/stats/reporting live in the three family replicas — cc-padel.html / cc-tennis.html / cc-squash.html — per the replica architecture.)
   COUNTRY CLUB (CC) · single front door · one club register, three disciplines.
   URL pattern: cc.html?club=1 (one file serves every country club — the header
   reads the club's name from cc_clubs, so "Farland Country Club" is just data).
@@ -99,7 +99,7 @@ var SB_URL="https://djmbnvikrdgnomjhtkgf.supabase.co";
 var SB_ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqbWJudmlrcmRnbm9tamh0a2dmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzOTE0MzEsImV4cCI6MjEwMDk2NzQzMX0.vR8xlVFjV6jXW-pAclGjM74HqmWSKVpsacFjM-dCIJI";
 var CID=(function(){ var m=(location.search||"").match(/[?&]club=(\d+)/); return m?parseInt(m[1],10):1; })();
 var DISCS=["padel","tennis","squash"];
-var REL="g13";  // replica release stamp — bump with each replica build; busts every cache layer
+var REL="g14";  // replica release stamp — bump with each replica build; busts every cache layer
 var DLABEL={padel:"Padel",tennis:"Tennis",squash:"Squash"};
 var DENGINE={padel:"OPR engine",tennis:"OTR engine",squash:"OSR engine"};
 
