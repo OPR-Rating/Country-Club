@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Country Club</title>
 <!--
-  VERSION: CC-FRONTDOOR v2026.08.26-21  (returning from a Control Room reopens the Office's Admin, unlocked)  (?member= opens that member's honour board — replica back buttons land here)  (padel plaque computed by the family's v44 single-source algorithm: seed + replayed match deltas, pairs expanded via member links — no dependency on any write-back column)  (dynamic member search on Profiles)  (admin: per-discipline Rebuild ratings buttons)  (deep links: plaques open the member INSIDE the replica; sport cards offer direct +Score)  (SLIM FRONT DOOR: identity + honour board + admin. Entry/stats/reporting live in the three family replicas — cc-padel.html / cc-tennis.html / cc-squash.html — per the replica architecture.)
+  VERSION: CC-FRONTDOOR v2026.08.27-22  (silent admin return; member directory in the Office; pill back-link; secondary button renamed; rebuild card removed)  (?member= opens that member's honour board — replica back buttons land here)  (padel plaque computed by the family's v44 single-source algorithm: seed + replayed match deltas, pairs expanded via member links — no dependency on any write-back column)  (dynamic member search on Profiles)  (admin: per-discipline Rebuild ratings buttons)  (deep links: plaques open the member INSIDE the replica; sport cards offer direct +Score)  (SLIM FRONT DOOR: identity + honour board + admin. Entry/stats/reporting live in the three family replicas — cc-padel.html / cc-tennis.html / cc-squash.html — per the replica architecture.)
   COUNTRY CLUB (CC) · single front door · one club register, three disciplines.
   URL pattern: cc.html?club=1 (one file serves every country club — the header
   reads the club's name from cc_clubs, so "Farland Country Club" is just data).
@@ -83,7 +83,7 @@ tr.tap{cursor:pointer}tr.tap:active{background:var(--linen)}
 <header>
   <h1 id="clubName" class="serif">Country Club</h1>
   <div class="sub">One club · Three disciplines · One rating home</div>
-  <div style="font-size:.62rem;color:#7a917f;margin-top:4px;letter-spacing:1px">v2026.08.26-21</div>
+  <div style="font-size:.62rem;color:#7a917f;margin-top:4px;letter-spacing:1px">v2026.08.26-22</div>
 </header>
 <nav id="nav">
   <button data-v="home" class="on">Home</button>
@@ -99,7 +99,7 @@ var SB_URL="https://djmbnvikrdgnomjhtkgf.supabase.co";
 var SB_ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqbWJudmlrcmRnbm9tamh0a2dmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzOTE0MzEsImV4cCI6MjEwMDk2NzQzMX0.vR8xlVFjV6jXW-pAclGjM74HqmWSKVpsacFjM-dCIJI";
 var CID=(function(){ var m=(location.search||"").match(/[?&]club=(\d+)/); return m?parseInt(m[1],10):1; })();
 var DISCS=["padel","tennis","squash"];
-var REL="g12";  // replica release stamp — bump with each replica build; busts every cache layer
+var REL="g13";  // replica release stamp — bump with each replica build; busts every cache layer
 var DLABEL={padel:"Padel",tennis:"Tennis",squash:"Squash"};
 var DENGINE={padel:"OPR engine",tennis:"OTR engine",squash:"OSR engine"};
 
@@ -128,11 +128,11 @@ function boot(){
   if(ADMIN_RETURN){
     S.view="admin";
     Array.prototype.forEach.call(document.querySelectorAll("#nav button"),function(x){x.classList.toggle("on",x.getAttribute("data-v")==="admin");});
-    render();
-    try{
-      var op=sessionStorage.getItem("cc_office_pin");
-      if(op){ var pi=document.getElementById("aPin"); if(pi){ pi.value=op; aUnlock(); } }
-    }catch(e){}
+    var op=null; try{ op=sessionStorage.getItem("cc_office_pin"); }catch(e){}
+    if(op){
+      document.getElementById("main").innerHTML='<div class="card"><div class="muted">Opening admin…</div></div>';
+      aUnlock(op);
+    } else { render(); }
   } else if(MEMBER_PARAM){
     S.view="profile"; S.profName=MEMBER_PARAM;
     Array.prototype.forEach.call(document.querySelectorAll("#nav button"),function(x){x.classList.toggle("on",x.getAttribute("data-v")==="profile");});
@@ -172,7 +172,7 @@ function vHome(m){
       +'<div class="nm">'+DLABEL[d]+'</div><div class="eng">'+DENGINE[d]+'</div>'
       +'<div style="display:flex;gap:10px;margin-top:14px">'
       +'<button onclick="goEnter(event,\''+d+'\')" style="flex:1.4;background:rgba(255,255,255,.92);color:#1B3B2F;border:none;padding:12px 8px;border-radius:9px;font-size:.95rem;font-weight:800;cursor:pointer">+ Enter Score</button>'
-      +'<button onclick="goSport(\''+d+'\')" style="flex:1;background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.5);padding:12px 8px;border-radius:9px;font-size:.85rem;font-weight:600;cursor:pointer">Open full app</button>'
+      +'<button onclick="goSport(\''+d+'\')" style="flex:1;background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.5);padding:12px 8px;border-radius:9px;font-size:.85rem;font-weight:600;cursor:pointer">Standings &amp; more</button>'
       +'</div></div>';
   });
   h+='</div></div>';
@@ -262,7 +262,7 @@ function backToList(){ S.profName=null; S.profDisc=null; render(); }
 function vProfileBoard(m){
   var nm=S.profName;
   var me=S.members.find(function(x){return x.full_name===nm;})||{};
-  m.innerHTML='<button class="back" onclick="backToList()">‹ All members</button>'
+  m.innerHTML='<button onclick="backToList()" style="background:var(--club);color:var(--linen);border:1px solid var(--brass);padding:8px 16px;border-radius:99px;font-size:.85rem;font-weight:600;cursor:pointer;margin-bottom:10px">‹ All members</button>'
     +'<div class="card"><h2 class="serif">'+esc(nm)+'</h2><div class="muted">The honour board — one member, three disciplines. Tap a plaque to open that sport\'s full app for the complete profile.</div>'
     +'<div class="board" id="board">Loading…</div></div>';
   // ONE SYSTEM, THREE SPORTS: every plaque reads the engine-written
@@ -353,14 +353,12 @@ function vAdmin(m){
     +'<textarea id="aBulk" style="width:100%;min-height:140px;font-family:monospace;font-size:12px;border:1px solid #cfc7b2;border-radius:7px;padding:9px;margin-top:8px" placeholder="John Smith, M, 1350\nSarah Jones, F, 1180\nMike Brown\tM\t1420"></textarea>'
     +'<button class="btn" onclick="aBulkAdd()">Add all pasted members</button>'
     +'<div class="msg" id="aMsgB"></div></div>';
-  h+='<div class="card"><h3>Rebuild ratings</h3>'
-    +'<div class="muted">Replays every match of that discipline from the register ratings — safe to run any time.</div>'
-    +'<div class="row" style="margin-top:8px">'
-    +'<button class="mini" style="padding:10px" onclick="aRebuild(\'padel\')">Padel</button>'
-    +'<button class="mini" style="padding:10px" onclick="aRebuild(\'tennis\')">Tennis</button>'
-    +'<button class="mini" style="padding:10px" onclick="aRebuild(\'squash\')">Squash</button>'
-    +'</div><div class="msg" id="aMsgR"></div></div>';
-  h+='<div class="card"><h3>Clubs (master)</h3>'
+  h+='<div class="card"><h3>Member directory ('+S.members.length+')</h3>'
+    +'<div class="muted">The full club register. Edits and removals live in the sport Control Rooms.</div>'
+    +'<input type="text" id="aDirSearch" placeholder="Search name…" oninput="aDirFilter()" autocomplete="off" style="margin-top:8px">'
+    +'<div id="aDir" style="max-height:340px;overflow:auto;margin-top:8px"></div></div>';
+  setTimeout(aDirFilter,0);
+  h+='<div class="card"><h3>Clubs (master)</h3>' 
     +'<label>New club name</label><input type="text" id="aCn">'
     +'<label>Its admin PIN</label><input type="text" id="aCp">'
     +'<button class="btn" onclick="aAddClub()">Create club</button>'
@@ -368,8 +366,9 @@ function vAdmin(m){
   m.innerHTML=h;
 }
 function apin(){ return S.adminPin; }
-function aUnlock(){
-  var p=val("aPin"); var msg=document.getElementById("aGateMsg");
+function aUnlock(pinArg){
+  var p=pinArg||val("aPin");
+  var msg=document.getElementById("aGateMsg")||{className:"",textContent:""};
   if(!p){ msg.className="msg err"; msg.textContent="Enter a PIN."; return; }
   msg.className="msg ok"; msg.textContent="Checking…";
   fn("cc_admin",{action:"list_clubs"}).then(function(r){
@@ -440,12 +439,16 @@ function aBulkAdd(){
     } else { msg.className="msg err"; msg.textContent=(r&&r.error)||"Failed."; }
   });
 }
-function aRebuild(d){
-  var msg=document.getElementById("aMsgR"); msg.className="msg ok"; msg.textContent="Rebuilding "+d+" ratings…";
-  fn("cc_recompute_"+d,{club_id:CID}).then(function(r){
-    if(r&&(r.ok||r.processed!=null||r.players!=null||!r.error)){ msg.className="msg ok"; msg.textContent=DLABEL[d]+" ratings rebuilt — refresh Profiles to see the board update."; loadRoster(); }
-    else { msg.className="msg err"; msg.textContent=(r&&r.error)||"Rebuild failed."; }
-  }).catch(function(e){ msg.className="msg err"; msg.textContent=String(e); });
+function aDirFilter(){
+  var q=(val("aDirSearch")||"").toLowerCase();
+  var rows=S.members.filter(function(r){ return !q || r.full_name.toLowerCase().indexOf(q)>=0; });
+  var el=document.getElementById("aDir"); if(!el)return;
+  if(!rows.length){ el.innerHTML='<span class="muted">No members match.</span>'; return; }
+  var h='<table><tr><th>Name</th><th>G</th><th>Rating</th><th>Current</th></tr>';
+  rows.forEach(function(r){
+    h+='<tr><td>'+esc(r.full_name)+'</td><td>'+esc(r.gender||"")+'</td><td>'+(r.seed_rating!=null?Math.round(r.seed_rating):"–")+'</td><td>'+(r.current_rating!=null?Math.round(r.current_rating):"–")+'</td></tr>';
+  });
+  el.innerHTML=h+'</table>';
 }
 function aAddClub(){
   var msg=document.getElementById("aMsg4"); msg.className="msg ok"; msg.textContent="Working…";
