@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Country Club</title>
 <!--
-  VERSION: CC-FRONTDOOR v2026.08.27-23  (silent admin return; member directory in the Office; pill back-link; secondary button renamed; rebuild card removed)  (?member= opens that member's honour board — replica back buttons land here)  (padel plaque computed by the family's v44 single-source algorithm: seed + replayed match deltas, pairs expanded via member links — no dependency on any write-back column)  (dynamic member search on Profiles)  (admin: per-discipline Rebuild ratings buttons)  (deep links: plaques open the member INSIDE the replica; sport cards offer direct +Score)  (SLIM FRONT DOOR: identity + honour board + admin. Entry/stats/reporting live in the three family replicas — cc-padel.html / cc-tennis.html / cc-squash.html — per the replica architecture.)
+  VERSION: CC-FRONTDOOR v2026.09.01-25  (g16: REL bumped; club name handed to the replicas’ branded veils via sessionStorage)  (g15 sport cards: full-width + Enter Score, then Ratings | Tournaments buttons deep-linking into the replicas via ?view=ratings / ?view=tournaments; "Standings & more" and goSport removed — the front door never links to a replica home page)  (silent admin return; member directory in the Office; pill back-link; secondary button renamed; rebuild card removed)  (?member= opens that member's honour board — replica back buttons land here)  (padel plaque computed by the family's v44 single-source algorithm: seed + replayed match deltas, pairs expanded via member links — no dependency on any write-back column)  (dynamic member search on Profiles)  (admin: per-discipline Rebuild ratings buttons)  (deep links: plaques open the member INSIDE the replica; sport cards offer direct +Score)  (SLIM FRONT DOOR: identity + honour board + admin. Entry/stats/reporting live in the three family replicas — cc-padel.html / cc-tennis.html / cc-squash.html — per the replica architecture.)
   COUNTRY CLUB (CC) · single front door · one club register, three disciplines.
   URL pattern: cc.html?club=1 (one file serves every country club — the header
   reads the club's name from cc_clubs, so "Farland Country Club" is just data).
@@ -99,7 +99,7 @@ var SB_URL="https://djmbnvikrdgnomjhtkgf.supabase.co";
 var SB_ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqbWJudmlrcmRnbm9tamh0a2dmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzOTE0MzEsImV4cCI6MjEwMDk2NzQzMX0.vR8xlVFjV6jXW-pAclGjM74HqmWSKVpsacFjM-dCIJI";
 var CID=(function(){ var m=(location.search||"").match(/[?&]club=(\d+)/); return m?parseInt(m[1],10):1; })();
 var DISCS=["padel","tennis","squash"];
-var REL="g14";  // replica release stamp — bump with each replica build; busts every cache layer
+var REL="g16";  // replica release stamp — bump with each replica build; busts every cache layer
 var DLABEL={padel:"Padel",tennis:"Tennis",squash:"Squash"};
 var DENGINE={padel:"OPR engine",tennis:"OTR engine",squash:"OSR engine"};
 
@@ -124,6 +124,8 @@ function boot(){
   rest("cc_clubs?id=eq."+CID+"&select=id,name").then(function(rows){
     S.club=(rows&&rows[0])||null;
     document.getElementById("clubName").textContent=S.club?S.club.name:"Country Club (club "+CID+" not found)";
+    // g16: hand the club name to the replicas' branded veils (session only, never in a URL)
+    try{ if(S.club&&S.club.name) sessionStorage.setItem("cc_club_name", S.club.name); }catch(e){}
   });
   if(ADMIN_RETURN){
     S.view="admin";
@@ -170,16 +172,22 @@ function vHome(m){
   DISCS.forEach(function(d){
     h+='<div class="sport-card '+d+'" style="cursor:default">'
       +'<div class="nm">'+DLABEL[d]+'</div><div class="eng">'+DENGINE[d]+'</div>'
-      +'<div style="display:flex;gap:10px;margin-top:14px">'
-      +'<button onclick="goEnter(event,\''+d+'\')" style="flex:1.4;background:rgba(255,255,255,.92);color:#1B3B2F;border:none;padding:12px 8px;border-radius:9px;font-size:.95rem;font-weight:800;cursor:pointer">+ Enter Score</button>'
-      +'<button onclick="goSport(\''+d+'\')" style="flex:1;background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.5);padding:12px 8px;border-radius:9px;font-size:.85rem;font-weight:600;cursor:pointer">Standings &amp; more</button>'
+      +'<div style="margin-top:14px">'
+      +'<button onclick="goEnter(event,\''+d+'\')" style="width:100%;background:rgba(255,255,255,.92);color:#1B3B2F;border:none;padding:12px 8px;border-radius:9px;font-size:.95rem;font-weight:800;cursor:pointer">+ Enter Score</button>'
+      +'</div>'
+      +'<div style="display:flex;gap:10px;margin-top:10px">'
+      +'<button onclick="goView(\''+d+'\',\'ratings\')" style="flex:1;background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.5);padding:11px 8px;border-radius:9px;font-size:.85rem;font-weight:600;cursor:pointer">Ratings</button>'
+      +'<button onclick="goView(\''+d+'\',\'tournaments\')" style="flex:1;background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.5);padding:11px 8px;border-radius:9px;font-size:.85rem;font-weight:600;cursor:pointer">Tournaments</button>'
       +'</div></div>';
   });
   h+='</div></div>';
   h+='<div class="card"><div class="muted">Register once, play everything. Every member holds one profile across all three sports — open <b>Profiles</b> to see the honour board.</div></div>';
   m.innerHTML=h;
 }
-function goSport(d){ location.href="cc-"+d+".html?club="+CID+"&r="+REL; }
+/* g15: the front door never links to a replica's HOME page (it duplicated cc and stranded
+   the member) — every sport-card button opens a DESTINATION inside the replica via the
+   glue's deep-link views, each with the veil, the ‹ Club chip and the home-bounce armed. */
+function goView(d,vw){ location.href="cc-"+d+".html?club="+CID+"&view="+vw+"&r="+REL; }
 function goControl(d){
   try{ sessionStorage.setItem("cc_cr_pin", S.adminPin||""); sessionStorage.setItem("cc_office_pin", S.adminPin||""); }catch(e){}
   location.href="cc-"+d+".html?club="+CID+"&view=admin&r="+REL;
