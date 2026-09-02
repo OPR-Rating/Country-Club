@@ -722,7 +722,7 @@
 </head>
 <body>
 <script>
-/* CC EARLY VEIL + MASTHEAD (g23) — additive; no family code modified.
+/* CC EARLY VEIL + MASTHEAD (g23b) — additive; no family code modified.
    MASTHEAD: the club "corridor" — painted here, in the FIRST frame, on every CC-served page:
    club name (Fraunces, same face as the veils) linking home, and the sport strip
    Padel · Tennis · Squash where the other two sports link DIRECTLY to this same section in
@@ -751,8 +751,9 @@
    +'#ccMastNav a{padding:7px 11px;border-radius:99px;color:rgba(242,237,224,.78);border:1px solid transparent;line-height:1}'
    +'#ccMastNav a.on{color:#1B3B2F;background:#C9A44C;border-color:#C9A44C}'
    +'#ccMastNav a:not(.on):hover{border-color:rgba(201,164,76,.55);color:#F2EDE0}'
-   +'body{padding-top:52px !important}'
-   +'.header{top:52px !important}'                       /* family header is sticky top:0 on wide screens — sit it under the masthead */
+   +'body{padding-top:52px !important;min-height:calc(100vh - 52px) !important}'   /* g23b: the 52px come OUT of the layout heights, not on top of them — */
+   +'.app{min-height:calc(100vh - 52px) !important}'                               /* otherwise the document is 52px taller than the viewport, the page can settle by 52px after the veil lifts (the vertical stutter) and the sticky header then rides over content */
+   +'@media (min-width:900px){.header{top:52px !important}.screen-content{max-height:calc(100vh - 192px) !important}.ladder-scroll{max-height:calc(100vh - 202px) !important}.home-lower #homeRecentList{max-height:calc(100vh - 392px) !important}}'
    +'[style*="position:sticky;top:0"]{top:52px !important}'
    +'@media (max-width:420px){#ccMastName{font-size:17px}#ccMastNav a{padding:7px 9px;font-size:11px}}';
   document.documentElement.appendChild(st);
