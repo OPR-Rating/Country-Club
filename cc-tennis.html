@@ -126,6 +126,12 @@
   .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px; }
   /* Club panel (shows beside Recent Matches on laptop; stacks below on phone) */
   .home-lower { margin-top: 4px; }
+  /* v28: hide the Club Overview panel on phones — it belongs on the laptop/desktop view
+     only, where it sits beside Recent Matches. OTR was the only fork missing this rule
+     (OPR/ODR/OSR/MDR all have it), so the panel was eating space in the club app. */
+  @media (max-width: 899px){
+    .home-club-col { display: none; }
+  }
   .club-panel { background:#fff; border:1px solid rgba(15,110,86,.16); border-radius:14px; overflow:hidden; box-shadow:0 2px 10px rgba(108,52,131,0.06); margin-top:22px; }
   .club-panel-head { background:linear-gradient(135deg,#0F6E56,#063d2c); color:#fff; font-size:13px; font-weight:800; letter-spacing:0.5px; padding:11px 16px; }
   .club-stats { padding:6px 16px 4px; }
@@ -541,7 +547,7 @@
 </head>
 <body>
 <script>
-/* CC EARLY VEIL + MASTHEAD (g23c) — additive; no family code modified.
+/* CC EARLY VEIL + MASTHEAD (g27) — additive; no family code modified.
    MASTHEAD: the club "corridor" — painted here, in the FIRST frame, on every CC-served page:
    club name (Georgia — the front door's own face, a system font: no load, no swap, so the hand-off frame from cc.html is identical) linking home, and the sport strip
    Padel · Tennis · Squash where the other two sports link DIRECTLY to this same section in
@@ -554,7 +560,7 @@
 (function(){ try{
   var q=new URLSearchParams(location.search);
   var cid=q.get('club')||'1', v=q.get('view'), p=q.get('player'), g=q.get('gender')||'M';
-  var SPORT='tennis', REL='g23';
+  var SPORT='tennis', REL='g27';
   var esc=function(x){ return String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); };
   var cn=''; try{ cn=sessionStorage.getItem('cc_club_name')||localStorage.getItem('cc_name_'+cid)||''; }catch(e){}
   cn=cn||'Country Club';
@@ -588,7 +594,14 @@
     var s2=document.createElement('style'); s2.textContent='@keyframes ccspin{to{transform:rotate(360deg)}}';
     vv.appendChild(s2); document.body.appendChild(vv);
     document.documentElement.style.overflow='hidden';
+    setTimeout(function(){ try{ var x=document.getElementById('ccBridgeVeil'); if(x){ x.remove(); document.documentElement.style.overflow=''; } }catch(e){} },7000);   /* g25: failsafe — a stalled navigation must not strand the member on green */
   }catch(e){} };
+  // g25: SWIPE-BACK / bfcache — a page restored from the back-forward cache returns exactly as left
+  // (bridge or return veil painted, spinner running, overflow locked). Tear every veil down on restore.
+  window.addEventListener('pageshow',function(e){ if(!e.persisted) return; try{
+    ['ccVeil','ccBridgeVeil','ccReturnVeil','ccEarlyVeilStyle'].forEach(function(id){ var x=document.getElementById(id); if(x) x.remove(); });
+    document.documentElement.style.overflow='';
+  }catch(_e){} });
   var homeHref=function(){ var u='cc.html?club='+encodeURIComponent(cid); if(p && p.indexOf(' & ')<0) u+='&member='+encodeURIComponent(p); if(v==='admin') u+='&view=admin'; return u+'&r='+REL; };
   var sportHref=function(sp){ var u='cc-'+sp+'.html?club='+encodeURIComponent(cid); if(p) u+='&player='+encodeURIComponent(p)+'&gender='+encodeURIComponent(g); else u+='&view='+encodeURIComponent(v||'ratings'); return u+'&r='+REL; };
   window.ccMount=function(){ try{
@@ -1921,7 +1934,7 @@ const _club = CLUBS[_clubParam] || (/^\d+$/.test(_clubParam) ? {id:Number(_clubP
 const CLUB_ID = _club.id;
 document.title = 'OTR · ' + _club.name;
 const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
-const OPR_VERSION = "OTR-LAPTOP v2026.08.26-27";  // PORT PASS from OPR v44: uneven 2-group RR splits (15→8+7, 17→9+8, 19→10+9, 20→10+10) with size-aware tiers; tournaments land on Draw & Rounds with a prominent switch under the title; fixture names stacked two lines (Band hidden on phones); pre-generation Standings says entry is open; round chips numbered by position (no "Rbye", no gaps/duplicates); + admin Recompute-now button. Includes v26 and all prior.
+const OPR_VERSION = "OTR-LAPTOP v2026.09.03-30";  // DOUBLE-TAP GUARD ON SUBMIT MATCH: the button is disabled on the FIRST tap, before any network call, so a weak signal can no longer let repeated taps save duplicate matches. Built ON TOP of the live file — nothing from any parallel session removed. Keeps the 2026-09-02 set-score off-by-one fix.
 // Explanation shown above the individual ladder. Open on load so it's read; collapsible
 // (state kept for the session) and scrolls away. Mechanics only — no outcome framing, so
 // members aren't nudged away from playing stronger opponents. Every clause maps to a real
@@ -3751,7 +3764,8 @@ function renderStep4(){
     </div>`;
 }
 
-async function submitMatch(){
+// Inner: original logic. Returns true ONLY when it has handed off to doSubmit().
+async function _submitMatchInner(){
   const submitter=document.getElementById('submitterName').value;
   const pin=document.getElementById('submitterPin').value;
   const err=document.getElementById('err4');
@@ -3991,6 +4005,7 @@ async function submitMatch(){
   entryData._submitter=submitter;
   entryData._pin=pin;
   doSubmit(btn);
+  return true;   // handed off: doSubmit owns the button from here
 }
 
 // Route a handicap-event score (entered on the main screen) to the SAFE tournament path.
@@ -4427,11 +4442,13 @@ function mkAdvanceGame(team){
 }
 function mkWinSet(team, viaTB){
   const i=team-1, j=1-i;
-  // g22 FIX (set-score off-by-one): the game increment is DEFERRED to the banner tap
-  // by design (see mkWinGame) -- but the SET route never credited the clinching game,
-  // so every normally-won set recorded one game short for the winner (6-2 saved as
-  // 5-2; tiebreak sets escaped because viaTB hardcodes 7-6). Credit it here, before
-  // the set score is frozen. Family-level bug (OTR-origin umpire) -- parents parked.
+  // FIX (set-score off-by-one, 2026-09-02): the game increment is DEFERRED to the
+  // banner tap by design (see mkWinGame -- the handicap head-start refactor), but the
+  // SET route never credited the clinching game, so every normally-won set recorded
+  // one game short for the winner (6-2 saved as 5-2; tiebreak sets escaped because
+  // viaTB hardcodes 7-6). Credit it here, before the set score is frozen. HANDICAP
+  // UNTOUCHED: hcGameNo and mkNewGamePts are not involved -- games[] is zeroed two
+  // lines below exactly as before; only the frozen set-score string changes.
   MK.games[i]++;
   MK.setsWon[i]++;
   let s1=MK.games[0], s2=MK.games[1];
@@ -4613,6 +4630,30 @@ function mkAfterSubmit(msg){
   if(typeof loadRecent==='function') loadRecent();
   if(typeof showScreen==='function') showScreen('homeScreen');
   alert(msg+'\n\n'+mkSideName(1)+'  '+MK.setsWon[0]+'–'+MK.setsWon[1]+'  '+mkSideName(2));
+}
+
+
+// DOUBLE-TAP GUARD (ported from OPR v46). On a weak club signal the checks before
+// submission take seconds, and the button used to stay live that whole time — so an
+// impatient tap-tap-tap fired several full submissions and saved duplicate matches.
+// The button is now disabled SYNCHRONOUSLY on the first tap, before any network call;
+// every existing failure path re-enables it exactly as before. The disabled state IS
+// the guard, so no second tap can start a second submission.
+async function submitMatch(){
+  const btn=document.getElementById('submitBtn');
+  if(btn){
+    if(btn.disabled) return;              // a submission is already running — ignore the tap
+    btn.disabled=true;
+    btn.textContent='Checking\u2026';
+  }
+  let handed=false;
+  try{
+    handed = await _submitMatchInner();
+  }finally{
+    // Only re-enable if we never reached doSubmit (validation failed, or a confirm was
+    // cancelled). Once handed off, doSubmit owns the button.
+    if(!handed && btn){ btn.disabled=false; btn.textContent='\u2713 Submit Match'; }
+  }
 }
 
 async function doSubmit(btn){  const err=document.getElementById('err4');  if(!navigator.onLine){
@@ -8110,7 +8151,7 @@ async function clRemove(id, label){
 
 <script>
 /* ============================================================
-   CC DEEP-LINK GLUE v2026.09.02-23 (g23: CORRIDOR — club MASTHEAD painted first-frame on every page: club name home link + Padel · Tennis · Squash strip linking DIRECTLY to the same section in the other sports; ‹ Club chip retired; veils moved BELOW the masthead (z 800) so the corridor never vanishes; lift() shows the destination FIRST, waits for fonts + two painted frames, then FADES the veil 200ms — no hard cut, no under-screen snippet; veil + masthead typeface = Georgia, the front door's own face, so the hand-off frame is identical; goHome pre-empted so the return veil paints before the family home page can show a frame) (g22: LIVE UMPIRE set-score off-by-one fixed -- the set-clinching game is now credited before the set score is frozen; one line in mkWinSet, family code, parents still carry the bug) (g21: shim WRITE mapping — register PATCH/POST of seed_rating renamed to seed_tennis, so a Control-Room seed edit is per-sport end to end) (g20: SHIM now aliases individuals seed reads to this sport's own column — seed_rating:seed_tennis — per-sport seeds served to every family screen unchanged) (g19: veils lock page overflow — the scrollbar-appearing centre-shift jiggle is gone; Control-Room session PIN no longer one-shot — refresh re-unlocks silently for the life of the tab) (g18: RETURN VEIL — the ‹ Club chip and the home-bounce paint the branded green the instant the return begins, so the journey back is bridged exactly like the journey out) (g17: EARLY VEIL — top-of-body snippet paints club green and hides the family app from the first frame on any deep link, lifted only when the destination stands; cc.html shows the same veil ON CLICK, so cc → replica → destination is one unbroken green surface with no home flash in either document) (g16: BRANDED VEIL — club name serif + gold spinner + named destination, club name via sessionStorage cc_club_name; return links to cc.html cache-stamped &r=g16 so a stale cached front door can never flash its gate on the way back) (g15: ?view=ratings -> laddersScreen, ?view=tournaments -> tournamentScreen — the sport-card destinations; front door no longer links to replica home pages) (g14: chip moved top-right — clear of every family footer/branding zone) (g13: veil held through admin unlock and profile paint — no gate/stutter flashes) (g8: individuals open via showPartnerships(id) — the family\u2019s real individual page; pairs still via loadProfile) (additive; no family code modified)
+   CC DEEP-LINK GLUE v2026.09.03-27 (g27: family RE-BASED on OTR v30 — adds the DOUBLE-TAP GUARD on Submit Match; the master now carries the set-score off-by-one fix itself, so the CC g22 FIX block is retired (single increment verified); every other CC hunk re-applied unchanged) (g25: family colours UNCHANGED (g24 palette withdrawn — the sport colour is wayfinding); bridge-veil 7s failsafe; swipe-back/bfcache restore tears down any veil) (g23: CORRIDOR — club MASTHEAD painted first-frame on every page: club name home link + Padel · Tennis · Squash strip linking DIRECTLY to the same section in the other sports; ‹ Club chip retired; veils moved BELOW the masthead (z 800) so the corridor never vanishes; lift() shows the destination FIRST, waits for fonts + two painted frames, then FADES the veil 200ms — no hard cut, no under-screen snippet; veil + masthead typeface = Georgia, the front door's own face, so the hand-off frame is identical; goHome pre-empted so the return veil paints before the family home page can show a frame) (g22: LIVE UMPIRE set-score off-by-one fixed -- the set-clinching game is now credited before the set score is frozen; one line in mkWinSet, family code, parents still carry the bug) (g21: shim WRITE mapping — register PATCH/POST of seed_rating renamed to seed_tennis, so a Control-Room seed edit is per-sport end to end) (g20: SHIM now aliases individuals seed reads to this sport's own column — seed_rating:seed_tennis — per-sport seeds served to every family screen unchanged) (g19: veils lock page overflow — the scrollbar-appearing centre-shift jiggle is gone; Control-Room session PIN no longer one-shot — refresh re-unlocks silently for the life of the tab) (g18: RETURN VEIL — the ‹ Club chip and the home-bounce paint the branded green the instant the return begins, so the journey back is bridged exactly like the journey out) (g17: EARLY VEIL — top-of-body snippet paints club green and hides the family app from the first frame on any deep link, lifted only when the destination stands; cc.html shows the same veil ON CLICK, so cc → replica → destination is one unbroken green surface with no home flash in either document) (g16: BRANDED VEIL — club name serif + gold spinner + named destination, club name via sessionStorage cc_club_name; return links to cc.html cache-stamped &r=g16 so a stale cached front door can never flash its gate on the way back) (g15: ?view=ratings -> laddersScreen, ?view=tournaments -> tournamentScreen — the sport-card destinations; front door no longer links to replica home pages) (g14: chip moved top-right — clear of every family footer/branding zone) (g13: veil held through admin unlock and profile paint — no gate/stutter flashes) (g8: individuals open via showPartnerships(id) — the family\u2019s real individual page; pairs still via loadProfile) (additive; no family code modified)
    Lets the CC front door land directly on a screen inside this app:
      ?player=<name>&gender=<M|F>   -> that member's profile page
      ?view=enter                   -> the +Enter Score wizard
@@ -8210,7 +8251,7 @@ async function clRemove(id, label){
           var b2='cc.html?club='+encodeURIComponent(cid);
           if(p && p.indexOf(' & ')<0) b2+='&member='+encodeURIComponent(p);
           if(v==='admin') b2+='&view=admin';
-          b2+='&r=g23';   // g16: cache-stamped return (see chip note)
+          b2+='&r=g27';   // g16: cache-stamped return (see chip note)
           ccReturnVeil();   // g18: green bridge on the way home
           location.href = b2;
         }
