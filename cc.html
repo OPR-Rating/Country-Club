@@ -3,9 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1B3B2F">
+<script>
+/* v50: INSTALLABLE CLUB APP — web-app manifest (standalone, club green, repo icons, start page = THIS club's cc.html) + iOS equivalents. Installed from here, every page (cc-*.html is inside scope ./) opens full-screen with no address bar. */
+(function(){ try{
+  var m=(location.search||'').match(/[?&]club=(\d+)/); var cid=m?m[1]:'1';
+  var man={name:'Country Club',short_name:'Club',start_url:'./cc.html?club='+cid,scope:'./',display:'standalone',background_color:'#1B3B2F',theme_color:'#1B3B2F',
+           icons:[{src:'./icon-192.png',sizes:'192x192',type:'image/png'},{src:'./icon-512.png',sizes:'512x512',type:'image/png'}]};
+  var href='data:application/manifest+json,'+encodeURIComponent(JSON.stringify(man));
+  var l=document.querySelector('link[rel="manifest"]'); if(!l){ l=document.createElement('link'); l.rel='manifest'; document.head.appendChild(l); } l.href=href;
+  var tc=document.querySelector('meta[name="theme-color"]'); if(!tc){ tc=document.createElement('meta'); tc.name='theme-color'; document.head.appendChild(tc); } tc.content='#1B3B2F';
+  [['apple-mobile-web-app-capable','yes'],['apple-mobile-web-app-status-bar-style','black-translucent'],['apple-mobile-web-app-title','Club']].forEach(function(p){ if(!document.querySelector('meta[name="'+p[0]+'"]')){ var e=document.createElement('meta'); e.name=p[0]; e.content=p[1]; document.head.appendChild(e); } });
+  if(!document.querySelector('link[rel="apple-touch-icon"]')){ var a=document.createElement('link'); a.rel='apple-touch-icon'; a.href='./icon-192.png'; document.head.appendChild(a); }
+}catch(e){} })();
+</script>
 <title>Country Club</title>
 <!--
-  VERSION: CC-FRONTDOOR v2026.09.03-48  (v48: sport colours deepened — padel #1F5FA8→#123E70, tennis #1F6B3F→#144426, squash #B8480A→#7E3200) (v47: sport colours — padel now the banner BLUE #2B85DB (sampled from header_bg2.png), squash now OSR orange #D35400; cards, plaques, pills and Recent Matches rules follow via the tokens) (v46: hero + tab bar frozen at the top; page content scrolls beneath; Members search sticks under the frozen block) (v45: Recent Matches cards — white background, sport-colour rule on BOTH sides) (v44: Recent Matches — each row a card with a 4px sport-colour rule) (v43: "Profiles" tab → "Members"; 3-column sport cards show "+ Score" in the half-width pill (no clipping); REL→g31) (v42: REL→g30) (v41: laptop 3-column sport cards — Enter Score pill cannot grow past its half and uses a smaller face there; REL→g29) (v40: sport card — Enter Score half-width to match Tournaments, name column shrinkable (laptop overlap fixed); Profiles search no longer autofocuses; REL→g28) (v39: sport cards — name + Enter Score on one line, Ratings | Tournaments beneath; swipe-back/bfcache restore tears down any departure veil; REL→g25) (v38: honour board — tennis/squash plaques for a not-yet-rated member fall back to seed_tennis/seed_squash, not the legacy seed_rating; a bulk-added member now shows the seeds typed) (v37: scrollbar-gutter:stable — no right-left jiggle on load/refresh) (v36: REL→g23 so front-door links bust the cache for the g23 masthead replicas) (v35: Engine-room status was rendering inside a display:none .msg container — visible now; Member directory shows the three per-sport SEEDS (Padel/Tennis/Squash), dead “Current” column retired)  (v34: Engine room routes through cc_admin v5’s PIN-gated recompute action — the engine clones have no CORS and were unreachable from the browser — with honest per-sport status lines)  (v33: ENGINE ROOM — per-sport Recompute buttons + Recompute-all in the Office admin, firing the engine clones directly with {club_id}; ends the edit-a-match-to-recompute workaround)  (v32: REGISTRATION DESK — Register-one-member card with three per-sport seed inputs (gender fills player defaults 1500/1300; a cleared box = non-player default 1300/1200) and the five-column bulk paste Name, Gender, Padel, Tennis, Squash with blanks kept; REL → g21 replicas with shim seed WRITE mapping)  (v31: padel plaque replay bases on seed_padel via PostgREST alias; REL → g20 replicas serving per-sport seeds through the shim)  (v30: veils lock page overflow on arrival and departure — scrollbar centre-shift jiggle gone; REL → g19 replicas: same overflow lock + Control-Room session PIN survives refresh)  (v29: ARRIVAL VEIL — returns from replicas land in branded green until the destination view stands, lifted by render(); Ratings/Tournaments buttons sized to fit the three-across cards; Recent Matches now the family’s expandable rows — tap for per-set pills in the discipline colour + Sets · Games, exactly as OPR/OTR/OSR do)  (g19: STALENESS GUARD — page probes the live repo for the current VSTAMP and re-enters itself once through a stamped URL when older, so bookmarked/unstamped entries can never pin a stale build; FRONT-DOOR DRESSING — the three disciplines in one line on wide screens, Recent Matches across all three sports beneath with a discipline pill per row)  (g18: silent-unlock RACE fixed — the parallel roster render can no longer paint the PIN gate over an in-flight admin return; name-blink fixed — last known club name painted from localStorage before the fetch; on-page banner stamp now tracks the build)  (g17: DEPARTURE VEIL on every sport-card / Control-Room / profile hop — branded green shown on click, before navigation, matching the replicas’ veils end-to-end)  (g16: REL bumped; club name handed to the replicas’ branded veils via sessionStorage)  (g15 sport cards: full-width + Enter Score, then Ratings | Tournaments buttons deep-linking into the replicas via ?view=ratings / ?view=tournaments; "Standings & more" and goSport removed — the front door never links to a replica home page)  (silent admin return; member directory in the Office; pill back-link; secondary button renamed; rebuild card removed)  (?member= opens that member's honour board — replica back buttons land here)  (padel plaque computed by the family's v44 single-source algorithm: seed + replayed match deltas, pairs expanded via member links — no dependency on any write-back column)  (dynamic member search on Profiles)  (admin: per-discipline Rebuild ratings buttons)  (deep links: plaques open the member INSIDE the replica; sport cards offer direct +Score)  (SLIM FRONT DOOR: identity + honour board + admin. Entry/stats/reporting live in the three family replicas — cc-padel.html / cc-tennis.html / cc-squash.html — per the replica architecture.)
+  VERSION: CC-FRONTDOOR v2026.09.03-50  (v50: installable — club web-app manifest (standalone, green, icons, per-club start page), theme-color club green, iOS meta) (v49: build stamp moved from the hero to a footer; sport colours one shade deeper — padel #174D8C→#0E3058, tennis #185A33→#0F381E, squash #A33E06→#6A2900) (v48: sport colours deepened — padel #1F5FA8→#123E70, tennis #1F6B3F→#144426, squash #B8480A→#7E3200) (v47: sport colours — padel now the banner BLUE #2B85DB (sampled from header_bg2.png), squash now OSR orange #D35400; cards, plaques, pills and Recent Matches rules follow via the tokens) (v46: hero + tab bar frozen at the top; page content scrolls beneath; Members search sticks under the frozen block) (v45: Recent Matches cards — white background, sport-colour rule on BOTH sides) (v44: Recent Matches — each row a card with a 4px sport-colour rule) (v43: "Profiles" tab → "Members"; 3-column sport cards show "+ Score" in the half-width pill (no clipping); REL→g31) (v42: REL→g30) (v41: laptop 3-column sport cards — Enter Score pill cannot grow past its half and uses a smaller face there; REL→g29) (v40: sport card — Enter Score half-width to match Tournaments, name column shrinkable (laptop overlap fixed); Profiles search no longer autofocuses; REL→g28) (v39: sport cards — name + Enter Score on one line, Ratings | Tournaments beneath; swipe-back/bfcache restore tears down any departure veil; REL→g25) (v38: honour board — tennis/squash plaques for a not-yet-rated member fall back to seed_tennis/seed_squash, not the legacy seed_rating; a bulk-added member now shows the seeds typed) (v37: scrollbar-gutter:stable — no right-left jiggle on load/refresh) (v36: REL→g23 so front-door links bust the cache for the g23 masthead replicas) (v35: Engine-room status was rendering inside a display:none .msg container — visible now; Member directory shows the three per-sport SEEDS (Padel/Tennis/Squash), dead “Current” column retired)  (v34: Engine room routes through cc_admin v5’s PIN-gated recompute action — the engine clones have no CORS and were unreachable from the browser — with honest per-sport status lines)  (v33: ENGINE ROOM — per-sport Recompute buttons + Recompute-all in the Office admin, firing the engine clones directly with {club_id}; ends the edit-a-match-to-recompute workaround)  (v32: REGISTRATION DESK — Register-one-member card with three per-sport seed inputs (gender fills player defaults 1500/1300; a cleared box = non-player default 1300/1200) and the five-column bulk paste Name, Gender, Padel, Tennis, Squash with blanks kept; REL → g21 replicas with shim seed WRITE mapping)  (v31: padel plaque replay bases on seed_padel via PostgREST alias; REL → g20 replicas serving per-sport seeds through the shim)  (v30: veils lock page overflow on arrival and departure — scrollbar centre-shift jiggle gone; REL → g19 replicas: same overflow lock + Control-Room session PIN survives refresh)  (v29: ARRIVAL VEIL — returns from replicas land in branded green until the destination view stands, lifted by render(); Ratings/Tournaments buttons sized to fit the three-across cards; Recent Matches now the family’s expandable rows — tap for per-set pills in the discipline colour + Sets · Games, exactly as OPR/OTR/OSR do)  (g19: STALENESS GUARD — page probes the live repo for the current VSTAMP and re-enters itself once through a stamped URL when older, so bookmarked/unstamped entries can never pin a stale build; FRONT-DOOR DRESSING — the three disciplines in one line on wide screens, Recent Matches across all three sports beneath with a discipline pill per row)  (g18: silent-unlock RACE fixed — the parallel roster render can no longer paint the PIN gate over an in-flight admin return; name-blink fixed — last known club name painted from localStorage before the fetch; on-page banner stamp now tracks the build)  (g17: DEPARTURE VEIL on every sport-card / Control-Room / profile hop — branded green shown on click, before navigation, matching the replicas’ veils end-to-end)  (g16: REL bumped; club name handed to the replicas’ branded veils via sessionStorage)  (g15 sport cards: full-width + Enter Score, then Ratings | Tournaments buttons deep-linking into the replicas via ?view=ratings / ?view=tournaments; "Standings & more" and goSport removed — the front door never links to a replica home page)  (silent admin return; member directory in the Office; pill back-link; secondary button renamed; rebuild card removed)  (?member= opens that member's honour board — replica back buttons land here)  (padel plaque computed by the family's v44 single-source algorithm: seed + replayed match deltas, pairs expanded via member links — no dependency on any write-back column)  (dynamic member search on Profiles)  (admin: per-discipline Rebuild ratings buttons)  (deep links: plaques open the member INSIDE the replica; sport cards offer direct +Score)  (SLIM FRONT DOOR: identity + honour board + admin. Entry/stats/reporting live in the three family replicas — cc-padel.html / cc-tennis.html / cc-squash.html — per the replica architecture.)
   COUNTRY CLUB (CC) · single front door · one club register, three disciplines.
   URL pattern: cc.html?club=1 (one file serves every country club — the header
   reads the club's name from cc_clubs, so "Farland Country Club" is just data).
@@ -25,9 +39,9 @@ html{scrollbar-gutter:stable}   /* v37: reserve the scrollbar gutter from the fi
   --linen-2:#E9E1CE;
   --brass:#C9A44C;       /* brass accent */
   --ink:#1E2B24;
-  --padel:#1F5FA8;   /* v48: deeper, more body */       /* v47: the BLUE sampled from the OPR header banner (header_bg2.png) — was the purple #6C3483 */
-  --tennis:#1F6B3F;  /* v48: deeper */
-  --squash:#B8480A;  /* v48: OSR's deeper orange */      /* v47: OSR's own orange (its banners/buttons) — was the reddish #A93226 */
+  --padel:#174D8C;   /* v48: deeper, more body */       /* v47: the BLUE sampled from the OPR header banner (header_bg2.png) — was the purple #6C3483 */
+  --tennis:#185A33;  /* v48: deeper */
+  --squash:#A33E06;  /* v48: OSR's deeper orange */      /* v47: OSR's own orange (its banners/buttons) — was the reddish #A93226 */
   --ok:#2E7D4F; --bad:#A93226;
 }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -56,9 +70,9 @@ button.mini{padding:6px 10px;border:1px solid #cfc7b2;background:#fff;border-rad
 .sport-card{border:none;border-radius:12px;padding:20px 16px;color:#fff;cursor:pointer;text-align:left;position:relative;overflow:hidden}
 .sport-card .nm{font-family:Georgia,serif;font-size:1.35rem;font-weight:700}
 .sport-card .eng{font-size:.7rem;letter-spacing:1.5px;text-transform:uppercase;opacity:.85;margin-top:3px}
-.sport-card.padel{background:linear-gradient(135deg,var(--padel),#123E70)}
-.sport-card.tennis{background:linear-gradient(135deg,var(--tennis),#144426)}
-.sport-card.squash{background:linear-gradient(135deg,var(--squash),#7E3200)}
+.sport-card.padel{background:linear-gradient(135deg,var(--padel),#0E3058)}
+.sport-card.tennis{background:linear-gradient(135deg,var(--tennis),#0F381E)}
+.sport-card.squash{background:linear-gradient(135deg,var(--squash),#6A2900)}
 .pill{display:inline-block;padding:2px 9px;border-radius:99px;font-size:.68rem;font-weight:700;letter-spacing:.5px;color:#fff}
 .pill.padel{background:var(--padel)}.pill.tennis{background:var(--tennis)}.pill.squash{background:var(--squash)}
 table{width:100%;border-collapse:collapse;font-size:.82rem}
@@ -70,9 +84,9 @@ tr.tap{cursor:pointer}tr.tap:active{background:var(--linen)}
 .msg.ok{display:block;background:#E3EFE7;color:#1D5433}.msg.err{display:block;background:#F5E1DE;color:#78231A}
 .board{display:grid;grid-template-columns:1fr;gap:10px;margin-top:8px}
 .plaque{border-radius:10px;padding:12px 14px;color:#fff;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
-.plaque.padel{background:linear-gradient(135deg,var(--padel),#123E70)}
-.plaque.tennis{background:linear-gradient(135deg,var(--tennis),#144426)}
-.plaque.squash{background:linear-gradient(135deg,var(--squash),#7E3200)}
+.plaque.padel{background:linear-gradient(135deg,var(--padel),#0E3058)}
+.plaque.tennis{background:linear-gradient(135deg,var(--tennis),#0F381E)}
+.plaque.squash{background:linear-gradient(135deg,var(--squash),#6A2900)}
 .plaque .d{font-size:.7rem;letter-spacing:1.5px;text-transform:uppercase;opacity:.85}
 .plaque .r{font-family:Georgia,serif;font-size:1.5rem;font-weight:700}
 .plaque .side{text-align:right;font-size:.78rem;line-height:1.5}
@@ -110,7 +124,6 @@ tr.tap{cursor:pointer}tr.tap:active{background:var(--linen)}
 <header>
   <h1 id="clubName" class="serif">Country Club</h1>
   <div class="sub">One club · Three disciplines · One rating home</div>
-  <div style="font-size:.62rem;color:#7a917f;margin-top:4px;letter-spacing:1px">v2026.09.03-48</div>
 </header>
 <nav id="nav">
   <button data-v="home" class="on">Home</button>
@@ -119,6 +132,7 @@ tr.tap{cursor:pointer}tr.tap:active{background:var(--linen)}
 </nav>
 </div>
 <main id="main"></main>
+<footer style="text-align:center;font-size:.62rem;color:#7a917f;letter-spacing:1px;padding:6px 0 18px">v2026.09.03-50</footer>   <!-- v49: build stamp moved out of the hero (three stamp sites: header comment, this footer, VSTAMP) -->
 <script>
 /* v46: publish the frozen top block's height as --cc-top so in-page sticky elements (Members search) sit beneath it */
 (function(){ function m(){ var t=document.getElementById("ccTop"); if(t) document.documentElement.style.setProperty("--cc-top",t.offsetHeight+"px"); } m(); window.addEventListener("resize",m); window.addEventListener("load",m); })();
@@ -132,7 +146,7 @@ var SB_ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZi
 var CID=(function(){ var m=(location.search||"").match(/[?&]club=(\d+)/); return m?parseInt(m[1],10):1; })();
 var DISCS=["padel","tennis","squash"];
 var REL="g31";  // replica release stamp — bump with each replica build; busts every cache layer
-var VSTAMP="v2026.09.03-48";  // build stamp — MUST match the banner div and the VERSION header every build
+var VSTAMP="v2026.09.03-50";  // build stamp — MUST match the banner div and the VERSION header every build
 /* g19 STALENESS GUARD: bookmarks open this page UNSTAMPED, and GitHub Pages lets browsers
    keep that URL for ~10 minutes — so every deploy looked dead on arrival. On load, quietly
    probe the live file (cache-bypassed) for its VSTAMP; if this page is older, re-enter once
