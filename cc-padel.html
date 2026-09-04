@@ -722,7 +722,7 @@
 </head>
 <body>
 <script>
-/* CC EARLY VEIL + MASTHEAD (g33) — additive; no family code modified.
+/* CC EARLY VEIL + MASTHEAD (g35) — additive; no family code modified.
    MASTHEAD: the club "corridor" — painted here, in the FIRST frame, on every CC-served page:
    club name (Georgia — the front door's own face, a system font: no load, no swap, so the hand-off frame from cc.html is identical) linking home, and the sport strip
    Padel · Tennis · Squash where the other two sports link DIRECTLY to this same section in
@@ -743,11 +743,15 @@
   var tc=document.querySelector('meta[name="theme-color"]'); if(!tc){ tc=document.createElement('meta'); tc.name='theme-color'; document.head.appendChild(tc); } tc.content='#1B3B2F';
   [['apple-mobile-web-app-capable','yes'],['apple-mobile-web-app-status-bar-style','black-translucent'],['apple-mobile-web-app-title','Club']].forEach(function(p){ if(!document.querySelector('meta[name="'+p[0]+'"]')){ var e=document.createElement('meta'); e.name=p[0]; e.content=p[1]; document.head.appendChild(e); } });
   if(!document.querySelector('link[rel="apple-touch-icon"]')){ var a=document.createElement('link'); a.rel='apple-touch-icon'; a.href='./icon-192.png'; document.head.appendChild(a); }
+  // g35: HOLD the club manifest. OPR v48+ rewrites the manifest link at load to its own per-club
+  // start page (./laptop.html?club=N — absent in this repo). Re-assert the club manifest whenever
+  // the link's href is changed by anyone, so installs from any CC page stay the club app.
+  try{ if(window.MutationObserver){ new MutationObserver(function(){ if(l.getAttribute('href')!==href){ l.setAttribute('href',href); } }).observe(l,{attributes:true,attributeFilter:['href']}); } }catch(e){}
 }catch(e){} })();
 (function(){ try{
   var q=new URLSearchParams(location.search);
   var cid=q.get('club')||'1', v=q.get('view'), p=q.get('player'), g=q.get('gender')||'M';
-  var SPORT='padel', REL='g33';
+  var SPORT='padel', REL='g35';
   var esc=function(x){ return String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); };
   var cn=''; try{ cn=sessionStorage.getItem('cc_club_name')||localStorage.getItem('cc_name_'+cid)||''; }catch(e){}
   cn=cn||'Country Club';
@@ -3227,7 +3231,37 @@ const _club = CLUBS[_clubParam] || (/^\d+$/.test(_clubParam) ? {id:Number(_clubP
 const CLUB_ID = _club.id;
 document.title = 'OPR · ' + _club.name;
 const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
-const OPR_VERSION = "OPR-DOUBLES v2026.09.03-47";  // MERGE of two parallel v46s: keeps the 2026-09-02 set-score off-by-one fix (clinching game credited on the set route) AND adds the double-tap guard on Submit Match (button disabled on the first tap, before any network call, so a weak signal cannot let repeated taps save duplicate matches). Nothing from either lineage dropped.
+
+// PER-CLUB INSTALL (v48). The page's manifest decides what an installed icon opens.
+// The static manifest said start_url "./laptop.html" with NO club, so a member who
+// followed their club's launcher link (which redirects here with ?club=N) and then
+// tapped Install got an icon that opened the app with no club — i.e. the Demo club.
+// Rewrite the manifest at load with THIS club baked in, so the icon installs under the
+// club's own name and always reopens that club. Clubs with their own launcher file are
+// unaffected; this fixes the far commoner "install from the app page" route.
+(function(){
+  try{
+    const url = './laptop.html?club=' + CLUB_ID;
+    const mf = {
+      name: 'OPR · ' + CLUB_NAME,
+      short_name: (String(CLUB_NAME).length > 12 ? String(CLUB_NAME).slice(0,12) : String(CLUB_NAME)) || 'OPR',
+      start_url: url,
+      scope: './',
+      display: 'standalone',
+      background_color: '#1c110a',
+      theme_color: '#1c110a',
+      icons: [
+        { src:'./icon-192.png', sizes:'192x192', type:'image/png' },
+        { src:'./icon-512.png', sizes:'512x512', type:'image/png' }
+      ]
+    };
+    const href = 'data:application/manifest+json,' + encodeURIComponent(JSON.stringify(mf));
+    let link = document.querySelector('link[rel="manifest"]');
+    if(!link){ link = document.createElement('link'); link.rel = 'manifest'; document.head.appendChild(link); }
+    link.setAttribute('href', href);
+  }catch(e){ /* install stays on the static manifest — no functional impact */ }
+})();
+const OPR_VERSION = "OPR-DOUBLES v2026.09.03-49";  // KNOCKOUT BRACKET SCORE ORIENTATION: a bracket box holds its two teams in canonical bracket order, which is not always the fixture’s seed_a/seed_b order — so in reversed boxes each score printed against the wrong team (winner highlight was always correct). Scores are now oriented by seed. Display only; no fixture, result or engine change. Includes v47 (set-score fix + double-tap guard) and all prior.
 // Explanation shown above the individual ladder. Open on load so it's read; collapsible
 // (state kept for the session) and scrolls away. Mechanics only — no outcome framing, so
 // members aren't nudged away from playing stronger opponents. Every clause maps to a real
@@ -7049,8 +7083,14 @@ async function loadTournamentSheet(tournament, division) {
     const bye = m.b===0;
     const ready = (m.a!=null && m.b!=null && m.b!==0 && !played && m.fx && m.fx.id);
     const emptyA = (m.a==null), emptyB=(m.b==null && m.b!==0);
-    const scoreA = played? m.fx.sets_a : '';
-    const scoreB = played? m.fx.sets_b : '';
+    // SCORE ORIENTATION FIX: the box's top/bottom slots are in canonical BRACKET order,
+    // which is not always the fixture's seed_a/seed_b order (the r1 map is keyed both
+    // ways, so a box can hold the fixture reversed). Printing sets_a against the top slot
+    // therefore showed each score against the wrong team in those boxes. Orient by seed —
+    // the winner highlight already did this correctly and is unchanged.
+    const _aIsFxA = !(m.fx && m.fx.seed_a!=null && m.a!=null && m.fx.seed_a !== m.a);
+    const scoreA = played? (_aIsFxA ? m.fx.sets_a : m.fx.sets_b) : '';
+    const scoreB = played? (_aIsFxA ? m.fx.sets_b : m.fx.sets_a) : '';
     // Handicap (handicap events only): a small tag under each team's own name, so the
     // Knockout Draw shows head-starts too — same lookup the rounds table uses. Only when
     // BOTH seeds are known and real (not a bye, not an unfilled slot).
@@ -8910,7 +8950,7 @@ async function clRemove(id, label){
 </script>
 <script>
 /* ============================================================
-   CC DEEP-LINK GLUE v2026.09.03-33 (g33: masthead tagline hidden under 560px — no clipped text beside the four pills) (g32: club web-app manifest + club-green theme-color replace the family\u2019s on every replica page — installable as ONE app, browser bar no longer changes colour per sport) (g31: played-only profile filter FIXED — reads the name from li.player-item .player-name; the data-name selector used in g29/g30 matched nothing, so every member showed) (g30: ⌂ HOME pill in the masthead — one tap to the club from any depth, replaces history like the other masthead links) (g29: swipe-back — masthead links and the home bounce REPLACE the history entry, and a bfcache-restored page on the family home re-routes to the club, so the OPR/OTR/OSR home page can never be uncovered; ratings-page profile pill lists only members with a recorded match in this discipline) (g28: PLAYER PROFILE PILL at the top of the Ratings page → the family\u2019s own profile search for this discipline; its Back returns to Ratings; home-bounce suspended for that screen when opened via the pill. Family bytes unchanged from g27) (g27: family RE-BASED on OPR v47 — adds the DOUBLE-TAP GUARD on Submit Match; the master now carries the set-score off-by-one fix itself, so the CC g22 FIX block is retired (single increment verified); every other CC hunk re-applied unchanged) (g25: family colours UNCHANGED (g24 palette withdrawn — the sport colour is wayfinding); bridge-veil 7s failsafe; swipe-back/bfcache restore tears down any veil) (g23: CORRIDOR — club MASTHEAD painted first-frame on every page: club name home link + Padel · Tennis · Squash strip linking DIRECTLY to the same section in the other sports; ‹ Club chip retired; veils moved BELOW the masthead (z 800) so the corridor never vanishes; lift() shows the destination FIRST, waits for fonts + two painted frames, then FADES the veil 200ms — no hard cut, no under-screen snippet; veil + masthead typeface = Georgia, the front door's own face, so the hand-off frame is identical; goHome pre-empted so the return veil paints before the family home page can show a frame) (g22: LIVE UMPIRE set-score off-by-one fixed -- the set-clinching game is now credited before the set score is frozen; one line in mkWinSet, family code, parents still carry the bug) (g21: shim WRITE mapping — register PATCH/POST of seed_rating renamed to seed_padel, so a Control-Room seed edit is per-sport end to end) (g20: SHIM now aliases individuals seed reads to this sport's own column — seed_rating:seed_padel — per-sport seeds served to every family screen unchanged) (g19: veils lock page overflow — the scrollbar-appearing centre-shift jiggle is gone; Control-Room session PIN no longer one-shot — refresh re-unlocks silently for the life of the tab) (g18: RETURN VEIL — the ‹ Club chip and the home-bounce paint the branded green the instant the return begins, so the journey back is bridged exactly like the journey out) (g17: EARLY VEIL — top-of-body snippet paints club green and hides the family app from the first frame on any deep link, lifted only when the destination stands; cc.html shows the same veil ON CLICK, so cc → replica → destination is one unbroken green surface with no home flash in either document) (g16: BRANDED VEIL — club name serif + gold spinner + named destination, club name via sessionStorage cc_club_name; return links to cc.html cache-stamped &r=g16 so a stale cached front door can never flash its gate on the way back) (g15: ?view=ratings -> laddersScreen, ?view=tournaments -> tournamentScreen — the sport-card destinations; front door no longer links to replica home pages) (g14: chip moved top-right — clear of every family footer/branding zone) (g13: veil held through admin unlock and profile paint — no gate/stutter flashes) (g8: individuals open via showPartnerships(id) — the family\u2019s real individual page; pairs still via loadProfile) (additive; no family code modified)
+   CC DEEP-LINK GLUE v2026.09.04-35 (g35: family RE-BASED on OPR v49 — the parent now carries the koBox score fix, so CC\u2019s g34 copy is retired; club manifest held against the family\u2019s per-club manifest rewrite (OPR v48+)) (g34: bracket koBox — scores mapped to the slot holding seed_a/seed_b (was positional; a final with the higher seed on top printed the digits swapped). Two lines of FAMILY code changed (display only); the same fix is owed to OPR/OTR/OSR) (g33: masthead tagline hidden under 560px — no clipped text beside the four pills) (g32: club web-app manifest + club-green theme-color replace the family\u2019s on every replica page — installable as ONE app, browser bar no longer changes colour per sport) (g31: played-only profile filter FIXED — reads the name from li.player-item .player-name; the data-name selector used in g29/g30 matched nothing, so every member showed) (g30: ⌂ HOME pill in the masthead — one tap to the club from any depth, replaces history like the other masthead links) (g29: swipe-back — masthead links and the home bounce REPLACE the history entry, and a bfcache-restored page on the family home re-routes to the club, so the OPR/OTR/OSR home page can never be uncovered; ratings-page profile pill lists only members with a recorded match in this discipline) (g28: PLAYER PROFILE PILL at the top of the Ratings page → the family\u2019s own profile search for this discipline; its Back returns to Ratings; home-bounce suspended for that screen when opened via the pill. Family bytes unchanged from g27) (g27: family RE-BASED on OPR v47 — adds the DOUBLE-TAP GUARD on Submit Match; the master now carries the set-score off-by-one fix itself, so the CC g22 FIX block is retired (single increment verified); every other CC hunk re-applied unchanged) (g25: family colours UNCHANGED (g24 palette withdrawn — the sport colour is wayfinding); bridge-veil 7s failsafe; swipe-back/bfcache restore tears down any veil) (g23: CORRIDOR — club MASTHEAD painted first-frame on every page: club name home link + Padel · Tennis · Squash strip linking DIRECTLY to the same section in the other sports; ‹ Club chip retired; veils moved BELOW the masthead (z 800) so the corridor never vanishes; lift() shows the destination FIRST, waits for fonts + two painted frames, then FADES the veil 200ms — no hard cut, no under-screen snippet; veil + masthead typeface = Georgia, the front door's own face, so the hand-off frame is identical; goHome pre-empted so the return veil paints before the family home page can show a frame) (g22: LIVE UMPIRE set-score off-by-one fixed -- the set-clinching game is now credited before the set score is frozen; one line in mkWinSet, family code, parents still carry the bug) (g21: shim WRITE mapping — register PATCH/POST of seed_rating renamed to seed_padel, so a Control-Room seed edit is per-sport end to end) (g20: SHIM now aliases individuals seed reads to this sport's own column — seed_rating:seed_padel — per-sport seeds served to every family screen unchanged) (g19: veils lock page overflow — the scrollbar-appearing centre-shift jiggle is gone; Control-Room session PIN no longer one-shot — refresh re-unlocks silently for the life of the tab) (g18: RETURN VEIL — the ‹ Club chip and the home-bounce paint the branded green the instant the return begins, so the journey back is bridged exactly like the journey out) (g17: EARLY VEIL — top-of-body snippet paints club green and hides the family app from the first frame on any deep link, lifted only when the destination stands; cc.html shows the same veil ON CLICK, so cc → replica → destination is one unbroken green surface with no home flash in either document) (g16: BRANDED VEIL — club name serif + gold spinner + named destination, club name via sessionStorage cc_club_name; return links to cc.html cache-stamped &r=g16 so a stale cached front door can never flash its gate on the way back) (g15: ?view=ratings -> laddersScreen, ?view=tournaments -> tournamentScreen — the sport-card destinations; front door no longer links to replica home pages) (g14: chip moved top-right — clear of every family footer/branding zone) (g13: veil held through admin unlock and profile paint — no gate/stutter flashes) (g8: individuals open via showPartnerships(id) — the family\u2019s real individual page; pairs still via loadProfile) (additive; no family code modified)
    Lets the CC front door land directly on a screen inside this app:
      ?player=<name>&gender=<M|F>   -> that member's profile page
      ?view=enter                   -> the +Enter Score wizard
@@ -9043,7 +9083,7 @@ async function clRemove(id, label){
           var b2='cc.html?club='+encodeURIComponent(cid);
           if(p && p.indexOf(' & ')<0) b2+='&member='+encodeURIComponent(p);
           if(v==='admin') b2+='&view=admin';
-          b2+='&r=g33';   // g16: cache-stamped return (see chip note)
+          b2+='&r=g35';   // g16: cache-stamped return (see chip note)
           ccReturnVeil();   // g18: green bridge on the way home
           location.replace(b2);   // g29: REPLACE — the replica entry (family home active) must not remain in history for swipe-back to uncover
         }
