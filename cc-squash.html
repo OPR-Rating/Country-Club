@@ -560,7 +560,7 @@
 </head>
 <body>
 <script>
-/* CC EARLY VEIL + MASTHEAD (g37) — additive; no family code modified.
+/* CC EARLY VEIL + MASTHEAD (g40) — additive; no family code modified.
    MASTHEAD: the club "corridor" — painted here, in the FIRST frame, on every CC-served page:
    club name (Georgia — the front door's own face, a system font: no load, no swap, so the hand-off frame from cc.html is identical) linking home, and the sport strip
    Padel · Tennis · Squash where the other two sports link DIRECTLY to this same section in
@@ -589,7 +589,7 @@
 (function(){ try{
   var q=new URLSearchParams(location.search);
   var cid=q.get('club')||'1', v=q.get('view'), p=q.get('player'), g=q.get('gender')||'M';
-  var SPORT='squash', REL='g37';
+  var SPORT='squash', REL='g40';
   var esc=function(x){ return String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); };
   var cn=''; try{ cn=sessionStorage.getItem('cc_club_name')||localStorage.getItem('cc_name_'+cid)||''; }catch(e){}
   cn=cn||'Country Club';
@@ -1059,32 +1059,15 @@
 
         <!-- ROOM: PAIRS (ODR — individuals combine into rated pairs) -->
         <div class="ac-room" id="acRoomPairs">
+          <!-- The manual pair-creation tools (Create a pair / Bulk create pairs / Re-derive
+               all pairs) were removed. Pairs are born automatically at match entry
+               (odrEnsurePair) at the live 60/40, so hand-creating them only produced pairs
+               with no matches ("ghost pairs"), and Re-derive rewrote every stored initial
+               rating club-wide. The JS functions are left in place, unreferenced, so nothing
+               else can break. The Current pairs list below is unchanged. -->
           <div class="ac-card">
-            <h4>Create a pair</h4>
-            <p style="font-size:12px;color:#7a6688;margin:0 0 9px;">Pick two individuals. The pair is born as one rated member: name A→Z, category from genders (Men's / Ladies / Mixed), initial rating = stronger×0.6 + weaker×0.4.</p>
-            <label style="font-size:11px;color:#7a6688;">Member A</label>
-            <div style="position:relative;"><input id="pAsearch" class="ac-field" placeholder="Search individual…" autocomplete="off"><div id="pAlist" class="odr-searchlist"></div></div>
-            <label style="font-size:11px;color:#7a6688;">Member B</label>
-            <div style="position:relative;"><input id="pBsearch" class="ac-field" placeholder="Search individual…" autocomplete="off"><div id="pBlist" class="odr-searchlist"></div></div>
-            <input id="pPin" class="ac-field" inputmode="numeric" placeholder="Pair PIN (4-digit)">
-            <div id="pairBirthPreview" style="font-size:12px;color:#7a6688;margin-bottom:9px;">Pick two individuals to preview the birth.</div>
-            <button class="ac-btn ac-btn-primary" style="width:100%;" onclick="odrCreatePair()">Create pair</button>
-            <div id="pairMsg" class="ac-msg"></div>
-          </div>
-
-          <div class="ac-card">
-            <h4>Bulk create pairs (paste)</h4>
-            <p style="font-size:12px;color:#7a6688;margin:0 0 8px;">Paste rows of <b>Person A, Person B, PIN</b> — one pair per line. Names must exactly match registered individuals. Category &amp; 60/40 rating are computed automatically.</p>
-            <textarea id="bulkPairText" class="ac-field" style="min-height:120px;font-family:monospace;font-size:12px;" placeholder="Andre Farrell, Bridget Dlamini, 4321&#10;Andre Farrell, Thomas Farrell, 4322"></textarea>
-            <button class="ac-btn ac-btn-primary" style="width:100%;" onclick="odrBulkCreatePairs()">Create all pasted pairs</button>
-            <div id="bulkPairMsg" class="ac-msg"></div>
-          </div>
-
-          <div class="ac-card">
-            <h4>Re-derive all pairs from current seeds</h4>
-            <p style="font-size:12px;color:#7a6688;margin:0 0 9px;">Recomputes every pair's <b>initial rating</b> = 60/40 of its two components' <b>current</b> individual seeds, overwrites the stored initial, then recomputes the whole club. Use this to fix any drift after editing individual seeds. Rarely needed — it moves ratings across the board.</p>
-            <button class="ac-btn ac-btn-primary" style="width:100%;" onclick="odrRederiveAll()">Re-derive all pairs &amp; recompute</button>
-            <div id="odrRederiveMsg" class="ac-msg"></div>
+            <h4>Pairs are created automatically</h4>
+            <p style="font-size:12px;color:#7a6688;margin:0;">A pair comes into being the first time its two players enter a match together — named as entered, rated at the live 60/40 of the two members. There is nothing to register here.</p>
           </div>
 
           <div class="ac-card">
@@ -3075,7 +3058,7 @@ const _club = CLUBS[_clubParam] || (/^\d+$/.test(_clubParam) ? {id:Number(_clubP
 const CLUB_ID = _club.id;
 document.title = 'OSR · ' + _club.name;
 const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
-const OPR_VERSION = "OSR-LAPTOP v2026.09.03-44";  // TABLE BOTTOM SPACING: every scrolling screen now has proper padding at the foot (plus the phone’s safe-area inset), so the last row of ratings/ladder/form tables no longer sits flush against the bottom edge. CSS only. Includes all prior work.
+const OPR_VERSION = "OSR-LAPTOP v2026.09.03-45";  // MANUAL PAIR CREATION REMOVED FROM ADMIN (ported from OPR v56): Create a pair, Bulk create pairs and Re-derive all pairs are gone — they only made match-less ghost pairs, and Re-derive rewrote every stored initial club-wide. Pairs are born automatically at match entry. Current pairs list untouched; underlying JS left in place unreferenced. Includes all prior work.
 // Explanation shown above the individual ladder. Open on load so it's read; collapsible
 // (state kept for the session) and scrolls away. Mechanics only — no outcome framing, so
 // members aren't nudged away from playing stronger opponents. Every clause maps to a real
@@ -9034,7 +9017,7 @@ async function clRemove(id, label){
 </script>
 <script>
 /* ============================================================
-   CC DEEP-LINK GLUE v2026.09.04-37 (g37: family RE-BASED on OSR v44 — table bottom spacing (safe-area) + the parent now carries the singles handicap division fix, so CC\u2019s g36 copy is retired) (g36: handicap router uses "<Type> Singles" for singles (was the plain type → "No draw found")) (g35: family RE-BASED on OSR v42 — the parent now carries the koBox score fix, so CC\u2019s g34 copy is retired; club manifest held against the family\u2019s per-club manifest rewrite (OPR v48+)) (g34: bracket koBox — scores mapped to the slot holding seed_a/seed_b (was positional; a final with the higher seed on top printed the digits swapped). Two lines of FAMILY code changed (display only); the same fix is owed to OPR/OTR/OSR) (g33: masthead tagline hidden under 560px — no clipped text beside the four pills) (g32: club web-app manifest + club-green theme-color replace the family\u2019s on every replica page — installable as ONE app, browser bar no longer changes colour per sport) (g31: played-only profile filter FIXED — reads the name from li.player-item .player-name; the data-name selector used in g29/g30 matched nothing, so every member showed) (g30: ⌂ HOME pill in the masthead — one tap to the club from any depth, replaces history like the other masthead links) (g29: swipe-back — masthead links and the home bounce REPLACE the history entry, and a bfcache-restored page on the family home re-routes to the club, so the OPR/OTR/OSR home page can never be uncovered; ratings-page profile pill lists only members with a recorded match in this discipline) (g28: PLAYER PROFILE PILL at the top of the Ratings page → the family\u2019s own profile search for this discipline; its Back returns to Ratings; home-bounce suspended for that screen when opened via the pill. Family bytes unchanged from g27) (g27: family RE-BASED on OSR v41 — adds the DOUBLE-TAP GUARD on Submit Match; the master now carries the set-score off-by-one fix itself, so the CC g22 FIX block is retired (single increment verified); every other CC hunk re-applied unchanged) (g25: family colours UNCHANGED (g24 palette withdrawn — the sport colour is wayfinding); bridge-veil 7s failsafe; swipe-back/bfcache restore tears down any veil) (g23: CORRIDOR — club MASTHEAD painted first-frame on every page: club name home link + Padel · Tennis · Squash strip linking DIRECTLY to the same section in the other sports; ‹ Club chip retired; veils moved BELOW the masthead (z 800) so the corridor never vanishes; lift() shows the destination FIRST, waits for fonts + two painted frames, then FADES the veil 200ms — no hard cut, no under-screen snippet; veil + masthead typeface = Georgia, the front door's own face, so the hand-off frame is identical; goHome pre-empted so the return veil paints before the family home page can show a frame) (g21: shim WRITE mapping — register PATCH/POST of seed_rating renamed to seed_squash, so a Control-Room seed edit is per-sport end to end) (g20: SHIM now aliases individuals seed reads to this sport's own column — seed_rating:seed_squash — per-sport seeds served to every family screen unchanged) (g19: veils lock page overflow — the scrollbar-appearing centre-shift jiggle is gone; Control-Room session PIN no longer one-shot — refresh re-unlocks silently for the life of the tab) (g18: RETURN VEIL — the ‹ Club chip and the home-bounce paint the branded green the instant the return begins, so the journey back is bridged exactly like the journey out) (g17: EARLY VEIL — top-of-body snippet paints club green and hides the family app from the first frame on any deep link, lifted only when the destination stands; cc.html shows the same veil ON CLICK, so cc → replica → destination is one unbroken green surface with no home flash in either document) (g16: BRANDED VEIL — club name serif + gold spinner + named destination, club name via sessionStorage cc_club_name; return links to cc.html cache-stamped &r=g16 so a stale cached front door can never flash its gate on the way back) (g15: ?view=ratings -> laddersScreen, ?view=tournaments -> tournamentScreen — the sport-card destinations; front door no longer links to replica home pages) (g14: chip moved top-right — clear of every family footer/branding zone) (g13: veil held through admin unlock and profile paint — no gate/stutter flashes) (g8: individuals open via showPartnerships(id) — the family\u2019s real individual page; pairs still via loadProfile) (additive; no family code modified)
+   CC DEEP-LINK GLUE v2026.09.07-40 (g40: family RE-BASED on OSR v45 — manual pair creation removed from admin) (g37: family RE-BASED on OSR v44 — table bottom spacing (safe-area) + the parent now carries the singles handicap division fix, so CC\u2019s g36 copy is retired) (g36: handicap router uses "<Type> Singles" for singles (was the plain type → "No draw found")) (g35: family RE-BASED on OSR v42 — the parent now carries the koBox score fix, so CC\u2019s g34 copy is retired; club manifest held against the family\u2019s per-club manifest rewrite (OPR v48+)) (g34: bracket koBox — scores mapped to the slot holding seed_a/seed_b (was positional; a final with the higher seed on top printed the digits swapped). Two lines of FAMILY code changed (display only); the same fix is owed to OPR/OTR/OSR) (g33: masthead tagline hidden under 560px — no clipped text beside the four pills) (g32: club web-app manifest + club-green theme-color replace the family\u2019s on every replica page — installable as ONE app, browser bar no longer changes colour per sport) (g31: played-only profile filter FIXED — reads the name from li.player-item .player-name; the data-name selector used in g29/g30 matched nothing, so every member showed) (g30: ⌂ HOME pill in the masthead — one tap to the club from any depth, replaces history like the other masthead links) (g29: swipe-back — masthead links and the home bounce REPLACE the history entry, and a bfcache-restored page on the family home re-routes to the club, so the OPR/OTR/OSR home page can never be uncovered; ratings-page profile pill lists only members with a recorded match in this discipline) (g28: PLAYER PROFILE PILL at the top of the Ratings page → the family\u2019s own profile search for this discipline; its Back returns to Ratings; home-bounce suspended for that screen when opened via the pill. Family bytes unchanged from g27) (g27: family RE-BASED on OSR v41 — adds the DOUBLE-TAP GUARD on Submit Match; the master now carries the set-score off-by-one fix itself, so the CC g22 FIX block is retired (single increment verified); every other CC hunk re-applied unchanged) (g25: family colours UNCHANGED (g24 palette withdrawn — the sport colour is wayfinding); bridge-veil 7s failsafe; swipe-back/bfcache restore tears down any veil) (g23: CORRIDOR — club MASTHEAD painted first-frame on every page: club name home link + Padel · Tennis · Squash strip linking DIRECTLY to the same section in the other sports; ‹ Club chip retired; veils moved BELOW the masthead (z 800) so the corridor never vanishes; lift() shows the destination FIRST, waits for fonts + two painted frames, then FADES the veil 200ms — no hard cut, no under-screen snippet; veil + masthead typeface = Georgia, the front door's own face, so the hand-off frame is identical; goHome pre-empted so the return veil paints before the family home page can show a frame) (g21: shim WRITE mapping — register PATCH/POST of seed_rating renamed to seed_squash, so a Control-Room seed edit is per-sport end to end) (g20: SHIM now aliases individuals seed reads to this sport's own column — seed_rating:seed_squash — per-sport seeds served to every family screen unchanged) (g19: veils lock page overflow — the scrollbar-appearing centre-shift jiggle is gone; Control-Room session PIN no longer one-shot — refresh re-unlocks silently for the life of the tab) (g18: RETURN VEIL — the ‹ Club chip and the home-bounce paint the branded green the instant the return begins, so the journey back is bridged exactly like the journey out) (g17: EARLY VEIL — top-of-body snippet paints club green and hides the family app from the first frame on any deep link, lifted only when the destination stands; cc.html shows the same veil ON CLICK, so cc → replica → destination is one unbroken green surface with no home flash in either document) (g16: BRANDED VEIL — club name serif + gold spinner + named destination, club name via sessionStorage cc_club_name; return links to cc.html cache-stamped &r=g16 so a stale cached front door can never flash its gate on the way back) (g15: ?view=ratings -> laddersScreen, ?view=tournaments -> tournamentScreen — the sport-card destinations; front door no longer links to replica home pages) (g14: chip moved top-right — clear of every family footer/branding zone) (g13: veil held through admin unlock and profile paint — no gate/stutter flashes) (g8: individuals open via showPartnerships(id) — the family\u2019s real individual page; pairs still via loadProfile) (additive; no family code modified)
    Lets the CC front door land directly on a screen inside this app:
      ?player=<name>&gender=<M|F>   -> that member's profile page
      ?view=enter                   -> the +Enter Score wizard
@@ -9167,7 +9150,7 @@ async function clRemove(id, label){
           var b2='cc.html?club='+encodeURIComponent(cid);
           if(p && p.indexOf(' & ')<0) b2+='&member='+encodeURIComponent(p);
           if(v==='admin') b2+='&view=admin';
-          b2+='&r=g37';   // g16: cache-stamped return (see chip note)
+          b2+='&r=g40';   // g16: cache-stamped return (see chip note)
           ccReturnVeil();   // g18: green bridge on the way home
           location.replace(b2);   // g29: REPLACE — the replica entry (family home active) must not remain in history for swipe-back to uncover
         }
