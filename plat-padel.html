@@ -735,7 +735,9 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 /* ============================================================================
-   PLAT EARLY SNIPPET — plat-padel.html  VERSION: PLAT-PADEL v2026.09.11-p54  (the entry picker offers the whole register again: it sends the
+   PLAT EARLY SNIPPET — plat-padel.html  VERSION: PLAT-PADEL v2026.09.11-p56  (people queries route on the ACTIVE SCREEN: three screens send the
+   same query — the picker, the admin table and the member list — and no filter tells them apart)
+   VERSION: PLAT-PADEL v2026.09.11-p54  (the entry picker offers the whole register again: it sends the
    same query as the group admin table, so the two are now told apart by which screen is open)
    VERSION: PLAT-PADEL v2026.09.11-p51 (fix: the DOOR was wearing the ledger's charcoal and had lost the OPR banner — the door and the ledger both arrive without a club, and p48's banner override did not tell them apart) (p50: a group's Admin lists ITS members, not the whole register — the table and the pair-birth lookup share a query signature and were both being sent register-wide; the header badge is larger) (p49: one register, one admin: a ledger that belongs to an ORGANISATION no longer offers General Admin — the organisation's register is administered in the club door, and two doors to one register is how things drift apart) (p48: two fixes: the ledger member list sent club_id to a pool-wide view and errored; and the ledger home kept OPR's banner because it is a background IMAGE on .home-hero, not a colour) (p47: a group board lists ITS members again — organisation groups were still reading the whole register — while the ledger lists everyone who has played and pickers keep the full register) (p46: the ledger lists players, not the whole register — people who have yet to play appear in General Admin, not on the boards) (p45: General Admin: the safety net — snapshots taken automatically before anything is removed, listed with Download and Put back) (p44: overall move: the figure itself is a pill in the group's colour, one line however many groups, with a small colour key beneath so nobody has to guess which is which) (p43: the header badge a touch larger and slightly raised, so it reads at a glance without competing with the title) (p42: every sheet's header names the group it belongs to — Ratings and Ladders, Team Profile and the rest look identical across groups, and a cross-group player could not tell which board they were on) (p41: shorter wording so it holds one line on a phone: "Overall move" + the per-group breakdown, then "See all matches in the ledger.") (p40: a group profile now states the person's TOTAL movement in the hero — the same number on every screen — with a line under it breaking it down by group, this group first) (p39: ledger General Admin: register the club's members FIRST — one at a time or pasted from Excel — before any group exists; groups then pick them up when they play) (p38: the other-group line reads "Move in <group> −17.9", left-ranged, above the Partnerships heading) (p37: no more jump on load: the layout the URL already implies — ledger dress, hidden controls, room for the chip — is set in <head> before first paint, instead of being rearranged once the database answered) (p36: group profiles: a line under the hero names what the player earned at OTHER groups, with a pointer to the ledger for every match — the groups stay separate, the movement stops being invisible) (p35: fix: the LEDGER replays the whole pool so it needs the true seed, not a group base — p33 sent it club_id=eq.0 and it showed no movement at all) (p34: speed: pair birth is answered locally — the pair is created by the submit itself — so entering a score makes one edge call instead of three) (p33: fix: a group page showed the wrong rating for anyone who also plays elsewhere — the rating cache now reads plat_padel_v_ratings, which carries each group's club-adjusted base for every person in the register) (p32: ledger ladders: the rank badge wears the pair's GROUP colour and the 1-2-3 medals are dropped — across a whole register a medal means little, the group tells you something) (p31: fix: the partnership pills are inside #partnershipsList, not #partnershipsCard — p30 watched the wrong element and never recoloured anything) (p30: ledger profiles: the partnership's category pill keeps its label and takes the GROUP's colour — Kloof purple, Sun Fun teal — so you can see where each partnership plays) (p28: the pairing-rating cache reads the whole register: one rating per person, so a partner from another group shows their rating instead of hiding the line) (p27: inside an organisation the club-scoped individuals read resolves to the ORG register, so org-registered people are pickable and their pairing rating shows) (p26: ledger profile list: the initial is an outlined circle in the club colour instead of a solid disc — less congested, same information) (p25: a group inside an ORGANISATION knows it: the chip under the hero goes back to the club door, not to a register that has no door) (p24: no "Club 1" flash: the register name is remembered and seeded into the key OPR paints from, and on a first visit the title is held back until it is known) (p23: fixes: no stale club-name flash when opening the door or ledger; manifest carries an explicit id so each register installs as its OWN app instead of "already installed") (p22: teardown: a standing backup warning on the panel and a "have you backed up?" line in every confirm) (p21: General Admin: a club "Delete…" opens the three-step teardown — matches, then members, then the club — each counted, each gated on the one before, each confirmed by typing the club name) (p20: every screen names its REGISTER: door "OPR · <register>", ledger "OPR · <register> · Ledger", club pages carry the register in the strapline, install names match — two registers open side by side can never be confused) (p19: empty register: the door explains where to create the first club; Recompute says so instead of firing with no club; door tiles use the stored club colour) (p18: install manifest rewritten once the club name is known — an installed icon reads "OPR · Kloof Padel Ballies", not "Club 2"; the door installs as "OPR · Clubs", the ledger as "OPR · Overall Ledger") (p17: ledger list: gender line dropped, club pill sits on its own line under the name) (p16: ledger only: profile avatars and the profile banner wear the club colour, with the club pill on the banner) (p15: remove_club now reports how many stranded members left the register with it) (p14: General Admin moved to the TOP of the Register; club colour is stored on the club (swatch picker); New club and Remove club; Recompute all ratings) (p13: fix: About sits AFTER the .home-lower grid instead of inside it — desktop ledger was splitting into two ragged columns) (p12: ledger: charcoal theme, "Overall Profile", club pills on profiles and recent matches, About below Recent; club pills colour-coded; "All clubs" chip centred under the hero; no duplicate version tag on Home, tag on the door) (p11: fix: 204 answers carry no body — "Failed to construct Response" after a delete; General Admin gets Delete) (p10: OPR Admin delete of a member/pair routed to delete_member — unlink from this club, drop from the register when no club remains) (p9: fix: PostgREST-only headers stripped on redirected function calls — "Failed to fetch" on Add member / pair birth) (p8: OPR Admin member add/edit and pair re-derive routed to plat_admin / plat_admin_padel) (p7: door: tiles clear the hero, padel-ball badges; Register moved to About in the Overall Ledger) (p6: Overall pairs ladder = every club's pair rows; version tag at the foot of every screen) (p5: REGISTER screen in the Overall Ledger: every player once with club pills; General Admin behind the register PIN via plat_admin v2) (p4: Overall = read-only ledger: no ✚ Enter, no Tournaments, no admin link; door re-styled) (p3: LANDING mode ?pool=P: hero + one button per club + Overall, nothing else; club pages carry an "‹ All clubs" chip instead of the strip)
    OPR-DOUBLES v2026.09.03-56 runs UNMODIFIED below (two marked hunks: the far CLUBS map and
@@ -830,12 +832,6 @@
     function swapClub(to){ qs=qs.replace(/club_id=eq\.\d+/g,to); }
     if(tbl==="clubs"){ if(pool) return {synthetic:[{id:0,name:(LANDING?(W.PLAT.poolName||"Clubs"):((W.PLAT.poolName?W.PLAT.poolName+" · ":"")+"Ledger")),admin_pin:null}]}; return "plat_clubs?"+qs; }
     if(tbl==="individuals"){
-      var register=/select=id,full_name,gender,seed_rating(&|$)/.test(qs);
-      // p33: the RATING CACHE (select=id,full_name,seed_rating) reads plat_padel_v_ratings — every person in
-      // the register, each with the base for THIS group (their seed plus what they earned at other groups).
-      // OPR then replays this group's matches on top, so the number it shows equals the person's ONE rating.
-      // p28 handed it pool seeds instead, which lost the other-group movement (Kloof showed 1801 for a man
-      // whose real rating was 1783). The group's own member list stays group-scoped and unchanged.
       if(/select=id,full_name,seed_rating(&|$)/.test(qs)){
         // p35: WHICH base depends on what the page will replay on top of it.
         //   a GROUP replays only its own matches  -> the club-adjusted base (plat_padel_v_ratings)
@@ -844,36 +840,25 @@
         if(pool){ swapClub("pool_id=eq."+P); return "plat_padel_v_pool_individuals?"+qs; }
         return "plat_padel_v_ratings?"+qs;
       }
-      // p27: inside an ORGANISATION the register lives above the group, so "this club's individuals" IS the
-      // org register — that is the population you can pick in a match, and what the engine cache must see for
-      // the pairing-rating line. Pools with no org (Kloof–Sun Fun, Sandbox) keep the club-scoped view.
-      // p47: WHO a screen should list.
-      //   the GROUP's member list  -> that group's members            (plat_padel_v_individuals)
-      //   the LEDGER's member list -> everyone who has PLAYED the sport (plat_padel_v_pool_active)
-      //   a picker / the register  -> everyone on the books            (plat_padel_v_pool_individuals)
-      // p46 got the ledger right but left organisation groups reading the whole register — a leftover from
-      // before the rating cache had its own view (p33), and the reason a group board listed strangers.
-      var profileList = /select=id,full_name,gender,seed_rating,current_rating/.test(qs);
-      // p50: the group admin's Individuals table and the pair-birth name lookup send the SAME select. The
-      // lookup always carries full_name=eq.… ; the table never does. So the table is group-scoped (its own
-      // members, which is what an admin should be editing) while the lookup still sees the whole register.
-      // p54: the ENTRY PICKER and the group ADMIN's table send an identical query — same columns, same order,
-      // no filter to tell them apart — so p50's "no full_name filter means admin" rule sent the picker to the
-      // group's own members and a new group's picker came back empty. The only honest difference is WHERE the
-      // user is: if the admin screen is open, it is the admin's table; otherwise it is the picker, which must
-      // offer the whole register so anyone can be given their first match.
-      var adminOpen = (function(){ try{ var a=document.getElementById("adminScreen");
-        return !!(a && a.classList && a.classList.contains("active")); }catch(e){ return false; } })();
-      var adminList = /select=id,full_name,gender,seed_rating(&|$)/.test(qs) && qs.indexOf("full_name=eq.")<0 && adminOpen;
-      if(adminList && !pool) return "plat_padel_v_individuals?"+qs;
-      if(profileList){
-        // p48: the pool-wide view has no club_id column, so the ledger's club_id=eq.0 had to become a
-        // pool filter — without it the request errored and the screen read "Could not load individuals".
+      // p56 / s6: three different screens send the SAME query for people — the entry picker, the group
+      // admin's table and the member/profile list. No filter tells them apart, so route on WHERE the user is:
+      //   entry screen        -> the whole register (anyone can be given their first match)
+      //   admin screen        -> this group's own members (what an admin edits)
+      //   anywhere else       -> the member list: this group's members on a board, and on the LEDGER the
+      //                          people who have actually played the sport.
+      var here = (function(){ try{ var a=document.querySelector(".screen.active"); return (a&&a.id)||""; }catch(e){ return ""; } })();
+      var peopleQuery = /select=(id,)?full_name(,gender)?(,seed_rating)?(,current_rating)?(&|$)/.test(qs) && qs.indexOf("full_name=eq.")<0;
+      if(peopleQuery){
+        // "" is boot, before any screen is marked active — the parent loads its player cache then, so the
+        // safe default is the register: a picker that is short of names is worse than a list that is long.
+        if(here==="" || here==="homeScreen" || here==="entryScreen" || here==="enterTournamentScreen"
+           || here==="clubLadderScreen" || here==="markerScreen"){
+          swapClub("pool_id=eq."+P); return "plat_padel_v_pool_individuals?"+qs;
+        }
+        if(here==="adminScreen" && !pool) return "plat_padel_v_individuals?"+qs;
         if(pool){ swapClub("pool_id=eq."+P); return "plat_padel_v_pool_active?"+qs; }
         return "plat_padel_v_individuals?"+qs;
       }
-      if(pool||register){ swapClub("pool_id=eq."+P); return "plat_padel_v_pool_individuals?"+qs; }
-      if(W.PLAT.orgId){ swapClub("pool_id=eq."+P); return "plat_padel_v_pool_individuals?"+qs; }
       return "plat_padel_v_individuals?"+qs;
     }
     if(DISC_TABLES[tbl]){
@@ -3242,7 +3227,7 @@ const CLUB_NAME = _club.name;  // shown in the logo as "OPR · <name>"
     link.setAttribute('href', href);
   }catch(e){ /* install stays on the static manifest — no functional impact */ }
 })();
-const OPR_VERSION = "OPR-DOUBLES v2026.09.03-56 · PLAT replica p54";  // MANUAL PAIR CREATION REMOVED FROM ADMIN: Create a pair, Bulk create pairs and Re-derive all pairs are gone (they only made match-less ghost pairs, and Re-derive rewrote every stored initial club-wide). Pairs are born automatically at match entry. Current pairs list untouched; the underlying JS is left in place unreferenced, so no other code path changes. Includes v47 (set-score fix + double-tap guard) and all prior.
+const OPR_VERSION = "OPR-DOUBLES v2026.09.03-56 · PLAT replica p57";  // MANUAL PAIR CREATION REMOVED FROM ADMIN: Create a pair, Bulk create pairs and Re-derive all pairs are gone (they only made match-less ghost pairs, and Re-derive rewrote every stored initial club-wide). Pairs are born automatically at match entry. Current pairs list untouched; the underlying JS is left in place unreferenced, so no other code path changes. Includes v47 (set-score fix + double-tap guard) and all prior.
 // Explanation shown above the individual ladder. Open on load so it's read; collapsible
 // (state kept for the session) and scrolls away. Mechanics only — no outcome framing, so
 // members aren't nudged away from playing stronger opponents. Every clause maps to a real
@@ -8966,7 +8951,7 @@ async function clRemove(id, label){
       +cs.map(function(c,i){ return card(c.id,c.name,"Ratings · pairs · scores · tournaments",clubPal(c.id),BALL); }).join("")
       +card(0,"Overall Ledger","Every player across the clubs — one rating each · ladders and stats only",LEDGER,BALL)
       +'<div style="text-align:center;font-size:12px;color:#7a6f8a;margin:8px 0 14px;line-height:1.5">One register · one rating per player<br>Each club keeps its own pairs, matches, tournaments and stats</div>'
-      +'<div style="text-align:center;color:#b3a9c4;font-size:10px;letter-spacing:.5px;margin:0 0 10px">'+esc((typeof OPR_VERSION!=="undefined"?OPR_VERSION:"")+"  ·  shim p54")+'</div>';
+      +'<div style="text-align:center;color:#b3a9c4;font-size:10px;letter-spacing:.5px;margin:0 0 10px">'+esc((typeof OPR_VERSION!=="undefined"?OPR_VERSION:"")+"  ·  shim p57")+'</div>';
     host.insertBefore(d,host.firstChild);
   }
   /* OVERALL: read-only ledger — no score entry, no tournaments, no admin link */
@@ -9585,7 +9570,7 @@ async function clRemove(id, label){
       var sb=document.querySelector("#homeScreen .hero-logo-panel .sub, #homeScreen .sub");
       if(sb && W.PLAT.poolName) sb.textContent=W.PLAT.poolName+" · Open Padel Ratings System"; }
     // version tag at the foot of every screen (OPR only prints it on Home/About)
-    try{ var vt=(typeof OPR_VERSION!=="undefined"?OPR_VERSION:"")+"  ·  shim p54"; document.querySelectorAll(".screen").forEach(function(s){ if(s.id==="homeScreen"||s.querySelector(".platVer")) return; var d=document.createElement("div"); d.className="platVer"; d.textContent=vt; d.style.cssText="text-align:center;color:#b3a9c4;font-size:10px;letter-spacing:.5px;margin:14px 0 8px"; s.appendChild(d); }); }catch(e){}
+    try{ var vt=(typeof OPR_VERSION!=="undefined"?OPR_VERSION:"")+"  ·  shim p57"; document.querySelectorAll(".screen").forEach(function(s){ if(s.querySelector(".platVer")) return; var d=document.createElement("div"); d.className="platVer"; d.textContent=vt; d.style.cssText="text-align:center;color:#b3a9c4;font-size:10px;letter-spacing:.5px;margin:14px 0 8px"; s.appendChild(d); }); }catch(e){}
     if(location.hash==="#enter"){ W.showScreen("entryScreen"); }
   });
 })();
