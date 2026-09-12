@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#16243D">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<title>Club</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!--
+  VERSION: PLAT-HUB v2026.09.11-h23  (group pills stacked and all the same width — Club group first, the
+  rest A-Z — instead of a ragged row sized to the words)
+  VERSION: PLAT-HUB v2026.09.11-h22  (a sport opens to its groups as PILLS in their own colours, the way
+  groups read everywhere else — the thin list was small and easy to confuse)
+  VERSION: PLAT-HUB v2026.09.11-h21  (the corner build tag appears only with ?build=1)
+  VERSION: PLAT-HUB v2026.09.11-h20  (MEMBERS is a proper entry at the top of the door, not a small link at
+  the foot — it is the thing most members open first)
+  VERSION: PLAT-HUB v2026.09.11-h19  (a plaque opens that sport's ledger AT the member, not just at the ledger)
+  VERSION: PLAT-HUB v2026.09.11-h18
+  MEMBERS — the honour board: one member, a plaque per sport in that sport's colour, with rating, level,
+  movement and rank. It all comes from org_register, so nothing new is asked of the database: level is
+  rating/200, movement is current less the rating they started on, rank is their place among the people who
+  have played that sport. Tapping a plaque opens that sport's ledger.
+  h17: the build is pinned to the corner of every screen. h16: a wider group palette. h15: the CLUB GROUP
+  leads each sport and the club explains itself once, in About.
+  VERSION: PLAT-HUB v2026.09.11-h14  (installable alongside the sport apps: each app is scoped to its own
+  page, so Chrome stops reporting "already installed" for every page in the folder)
+  VERSION: PLAT-HUB v2026.09.11-h13  (squash is wired: its groups open plat-squash.html and its ledger works)
+  VERSION: PLAT-HUB v2026.09.11-h12  (Club admin gains the Engine — recompute a sport's ratings — which the
+  standalone register's admin already had. The two admins now offer the same things.)
+  VERSION: PLAT-HUB v2026.09.11-h11  (each group can be edited in place — name, colour, its own code —
+  instead of only being deletable.)
+  VERSION: PLAT-HUB v2026.09.11-h10  (the build shows on the front page, so it is obvious which version is live)
+  VERSION: PLAT-HUB v2026.09.11-h9  (Club admin opens on its OWN screen with a back arrow, instead of
+  unfolding down the front page. The front page stays what a member sees: the club, its sports, its groups.)
+  VERSION: PLAT-HUB v2026.09.11-h8  (Club admin gains what the ledger already had: the three-step teardown
+  for a group — matches, then members, then the group — each counted and confirmed, and the SAFETY NET:
+  snapshots taken automatically before anything is removed, with Download and Put back.)
+  VERSION: PLAT-HUB v2026.09.10-h7  (tennis is wired: its groups open plat-tennis.html and its ledger works)
+  VERSION: PLAT-HUB v2026.09.10-h6  (nothing opens itself: every sport starts closed, and Club admin sits behind
+  a quiet link with a short explanation of what the code opens.)
+  VERSION: PLAT-HUB v2026.09.10-h5  (Around the club: rows open like the group boards do — set-score pills and
+  totals — the group is a coloured pill, and the names no longer run into the date.)
+  VERSION: PLAT-HUB v2026.09.10-h4  (a score is entered inside the group, as everywhere else — the front page
+  no longer offers it. The ledger button says what it is.)
+  VERSION: PLAT-HUB v2026.09.10-h3  (register works like the rest of the family: ONE entry — name, gender,
+  rating, optional PIN — plus a bulk paste. No group ticking: a person joins a group by PLAYING there, and
+  their rating for that sport is created from the one they were registered with.)
+  VERSION: PLAT-HUB v2026.09.10-h2  (register does the whole job in one place: name, gender, which groups
+  they join, and their starting rating in each sport that implies — instead of leaving them on the non-player
+  default. Colour is a swatch, not a hex to type.)
+  VERSION: PLAT-HUB v2026.09.10-h1
+  THE ORGANISATION DOOR.  organisation → discipline → group
+    ORGANISATION (this page)  the customer: one register of people, discipline toggles, group creation.
+                              Administers; never rates. Wears its own dress — not OPR's, not CC's.
+    DISCIPLINE  (a plaque)    the rating scope: one rating per person per sport, one ledger, one engine run.
+    GROUP       (a row)       autonomous: own PIN, colour, pairs, matches, ladder, tournaments. Opens its
+                              parent app (plat-padel.html …), which keeps ITS OWN branding.
+  Reads plat_admin (list_org / org_register) and plat_matches; writes only through plat_admin.
+  Pools with no org — Kloof–Sun Fun, Sandbox — are invisible here and unaffected.
+-->
+<style>
+:root{
+  --ground:#FBFAF7; --ground-2:#F2EFE9; --panel:#FFFFFF; --line:#DCD6C9; --line-2:#EFEBE2;
+  --ink:#16243D; --ink-soft:#6C7789; --ok:#2e7d32; --bad:#c62828;
+  --display:'Archivo',system-ui,sans-serif; --body:'Inter',system-ui,sans-serif;
+  --radius:2px; --ease:cubic-bezier(.2,.7,.3,1);
+  --padel:#174D8C; --tennis:#185A33; --squash:#A33E06; --bowls:#2E5E3A; --mdr:#5B2C6F;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--ground);color:var(--ink);font-family:var(--body);-webkit-font-smoothing:antialiased;padding-bottom:40px}
+.wrap{max-width:560px;margin:0 auto;padding:0 18px}
+button{font-family:var(--body)}
+header{padding:30px 0 18px}
+.club{font-family:var(--display);font-weight:700;letter-spacing:-.02em;font-size:33px;line-height:1.05;margin:0}
+.sub{font-size:13px;color:var(--ink-soft);margin-top:7px}
+.rule{height:3px;background:var(--ink);margin-top:16px}
+.plaques{margin-top:18px;display:flex;flex-direction:column;gap:12px}
+.plaque{background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--sport);border-radius:var(--radius);overflow:hidden}
+.phead{all:unset;display:flex;align-items:center;gap:13px;width:100%;padding:15px 15px;cursor:pointer;box-sizing:border-box}
+.phead:focus-visible{outline:2px solid var(--ink);outline-offset:-3px}
+.badge{width:36px;height:36px;flex:0 0 36px;border-radius:var(--radius);background:var(--sport);color:#fff;
+       display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12.5px;letter-spacing:.02em}
+.pname{font-family:var(--display);font-weight:700;font-size:18px;letter-spacing:-.01em}
+.pmeta{font-size:12.5px;color:var(--ink-soft);margin-top:2px}
+.chev{margin-left:auto;color:var(--ink-soft);font-size:19px;transition:transform .25s var(--ease)}
+.plaque.open .chev{transform:rotate(90deg)}
+.passage{display:grid;grid-template-rows:0fr;transition:grid-template-rows .28s var(--ease)}
+.plaque.open .passage{grid-template-rows:1fr}
+.passage > div{overflow:hidden}
+.pinner{border-top:1px solid var(--line-2)}
+.grp{display:flex;align-items:center;gap:11px;padding:11px 15px;cursor:pointer;border-bottom:1px solid var(--line-2)}
+.grp:hover{background:var(--ground-2)}
+.tick{width:8px;height:8px;border-radius:50%;background:var(--gcol,var(--sport));flex:0 0 8px}
+.gname{font-weight:600;font-size:15px}
+.gmeta{font-size:12px;color:var(--ink-soft);margin-top:2px}
+.gopen{margin-left:auto;font-size:12.5px;color:var(--ink-soft)}
+.empty{padding:13px 15px;font-size:13px;color:var(--ink-soft)}
+.ptools{display:flex;gap:9px;padding:12px 15px}
+.tool{flex:1;text-align:center;padding:10px 6px;border:1px solid var(--line);border-radius:var(--radius);
+      font-size:13px;font-weight:600;cursor:pointer;background:transparent;color:var(--ink)}
+.tool.primary{background:var(--sport);border-color:var(--sport);color:#fff}
+.tool:disabled{opacity:.4;cursor:default}
+.board{margin-top:26px}
+.btitle{font-family:var(--display);font-weight:700;font-size:15px;letter-spacing:-.01em;margin-bottom:9px}
+.row{display:flex;align-items:center;gap:11px;padding:10px 12px;background:var(--panel);
+     border:1px solid var(--line);border-left:3px solid var(--sport);border-radius:var(--radius);margin-bottom:7px}
+.rwho{display:block;font-size:13.5px;font-weight:500;line-height:1.35}
+.rwhen{display:block;font-size:11.5px;color:var(--ink-soft);margin-top:3px}
+.gpill{display:inline-block;background:var(--sport);color:#fff;border-radius:99px;padding:1px 8px;font-size:10.5px;font-weight:700;margin-right:6px;vertical-align:middle}
+.rcar{margin-left:8px;color:var(--ink-soft);font-size:11px}
+.rdet{display:none;margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);text-align:center}
+.spill{display:inline-block;background:var(--sport);color:#fff;border-radius:var(--radius);padding:3px 10px;margin:0 3px;font-size:12.5px;font-weight:700}
+.rtot{font-size:11.5px;color:var(--ink-soft);margin-top:5px}
+.rscore{margin-left:auto;font-weight:700;font-size:14px;color:var(--sport);white-space:nowrap}
+.adm{margin-top:26px;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);padding:14px}
+.atitle{font-family:var(--display);font-weight:700;font-size:15px;margin-bottom:4px}
+.ahint{font-size:12.5px;color:var(--ink-soft);line-height:1.5;margin-bottom:10px}
+input,select{width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:var(--radius);
+             font-size:14px;font-family:var(--body);color:var(--ink);background:var(--panel)}
+.field{margin-bottom:8px}
+.label{font-size:12px;font-weight:600;color:var(--ink-soft);margin:10px 0 4px}
+.btn{width:100%;padding:11px;border:1px solid var(--ink);background:var(--ink);color:var(--ground);
+     border-radius:var(--radius);font-weight:600;font-size:14px;cursor:pointer;margin-top:8px}
+.btn.ghost{background:transparent;color:var(--ink)}
+.msg{font-size:12.5px;margin-top:8px;min-height:16px}
+.tog{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line-2)}
+.sw{width:42px;height:23px;border-radius:99px;border:none;position:relative;cursor:pointer;background:#cfc7b2}
+.sw.on{background:var(--ok)}
+.sw:after{content:'';position:absolute;top:3px;left:3px;width:17px;height:17px;border-radius:50%;background:#fff;transition:left .15s}
+.sw.on:after{left:22px}
+.row2{display:flex;gap:8px}.row2 > *{flex:1}
+.people{max-height:320px;overflow:auto;margin-top:8px}
+.prow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line-2)}
+.pill{display:inline-block;background:var(--pcol,#ddd);color:#fff;border-radius:99px;padding:2px 8px;
+      font-size:10.5px;font-weight:700;margin:2px 3px 0 0;white-space:nowrap}
+.rate{font-size:11.5px;color:var(--ink-soft)}
+.sws{display:flex;flex-wrap:wrap;gap:7px;margin:2px 0 4px}
+.swb{width:28px;height:28px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0}
+.swb[aria-pressed="true"]{border-color:var(--ink)}
+.chk{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line-2);font-size:14px}
+.chk input{width:auto}
+.seed{display:flex;align-items:center;gap:8px;margin:6px 0}
+.seed span{flex:1;font-size:13px}
+.seed input{width:110px}
+.foot{margin-top:22px;font-size:11px;color:var(--ink-soft);letter-spacing:.02em;text-align:center}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1 class="club" id="orgName">Club</h1>
+    <div class="sub" id="orgSub">Opening…</div>
+    <div class="rule"></div>
+    <div style="display:flex;gap:10px;margin-top:14px">
+      <button onclick="showMembers()" style="flex:1;background:var(--ink);color:var(--ground);border:none;border-radius:var(--radius);
+        padding:13px 16px;font:700 14.5px var(--body);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+        Members <span style="opacity:.7;font-weight:600">— every rating, one place</span></button>
+      <button onclick="showAbout()" style="flex:0 0 auto;background:transparent;color:var(--ink);border:1.5px solid var(--line);
+        border-radius:var(--radius);padding:13px 18px;font:600 14px var(--body);cursor:pointer">About</button>
+    </div>
+  </header>
+  <div class="plaques" id="plaques"></div>
+  <section class="board"><div class="btitle">Around the club</div><div id="rows"></div></section>
+  <section id="adminBox"></section>
+</div>
+<div id="membersScreen" style="display:none;position:fixed;inset:0;background:var(--ground);overflow:auto;z-index:50">
+  <div style="background:var(--ink);color:var(--ground);padding:16px 18px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:2">
+    <button onclick="hideMembers()" style="all:unset;cursor:pointer;font-size:20px;line-height:1">&#8592;</button>
+    <div id="membersTitle" style="font-family:var(--display);font-weight:700;font-size:19px;letter-spacing:-.01em">Members</div>
+    <div id="membersWhere" style="margin-left:auto;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.35);border-radius:99px;padding:5px 13px;font-size:12.5px;font-weight:700"></div>
+  </div>
+  <div class="wrap" id="membersBody" style="padding-top:14px;padding-bottom:40px"></div>
+</div>
+<div id="aboutScreen" style="display:none;position:fixed;inset:0;background:var(--ground);overflow:auto;z-index:50">
+  <div style="background:var(--ink);color:var(--ground);padding:16px 18px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:2">
+    <button onclick="hideAbout()" style="all:unset;cursor:pointer;font-size:20px;line-height:1">&#8592;</button>
+    <div style="font-family:var(--display);font-weight:700;font-size:19px;letter-spacing:-.01em">About</div>
+    <div id="aboutWhere" style="margin-left:auto;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.35);border-radius:99px;padding:5px 13px;font-size:12.5px;font-weight:700"></div>
+  </div>
+  <div class="wrap" id="aboutBody" style="padding-top:16px;padding-bottom:40px"></div>
+</div>
+<div id="adminScreen" style="display:none;position:fixed;inset:0;background:var(--ground);overflow:auto;z-index:50">
+  <div style="background:var(--ink);color:var(--ground);padding:16px 18px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:2">
+    <button onclick="hideAdmin()" style="all:unset;cursor:pointer;font-size:20px;line-height:1">&#8592;</button>
+    <div style="font-family:var(--display);font-weight:700;font-size:19px;letter-spacing:-.01em">Club admin</div>
+    <div id="adminWhere" style="margin-left:auto;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.35);border-radius:99px;padding:5px 13px;font-size:12.5px;font-weight:700"></div>
+  </div>
+  <div class="wrap" id="adminBody" style="padding-top:14px;padding-bottom:40px"></div>
+</div>
+<div class="wrap"><div class="foot" id="ver">PLAT-HUB h23 · hub</div></div>
+
+<script>
+"use strict";
+var SB="https://djmbnvikrdgnomjhtkgf.supabase.co";
+var ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqbWJudmlrcmRnbm9tamh0a2dmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzOTE0MzEsImV4cCI6MjEwMDk2NzQzMX0.vR8xlVFjV6jXW-pAclGjM74HqmWSKVpsacFjM-dCIJI";
+var ORG=(function(){ var m=(location.search||"").match(/[?&]org=(\d+)/); return m?parseInt(m[1],10):0; })();
+
+/* SPORT REGISTRY — the only place a sport is described. A sport with no replica yet says so plainly. */
+var SPORTS={
+  padel :{label:"Padel",  initials:"PD", colour:"var(--padel)",  parent:"OPR", replica:"plat-padel.html"},
+  tennis:{label:"Tennis", initials:"TN", colour:"var(--tennis)", parent:"OTR", replica:"plat-tennis.html"},
+  squash:{label:"Squash", initials:"SQ", colour:"var(--squash)", parent:"OSR", replica:"plat-squash.html"},
+  bowls :{label:"Bowls",  initials:"BW", colour:"var(--bowls)",  parent:"OBR", replica:null},
+  mdr   :{label:"Masters Squash", initials:"MS", colour:"var(--mdr)", parent:"MDR", replica:null}
+};
+var PALETTE=["#6c3483","#283593","#1565c0","#00838f","#00695c","#2e7d32","#4e802b","#827717","#ae611c","#c62828","#ad1457","#455a64"];
+var S={adminOpen:false,newCol:"#6c3483",org:null,shape:[],all:[],rows:[],pools:{},admin:"",role:"",people:[],groups:[]};
+
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
+function fn(body){ return fetch(SB+"/functions/v1/plat_admin",{method:"POST",headers:{"Content-Type":"application/json",apikey:ANON,Authorization:"Bearer "+ANON},body:JSON.stringify(body)}).then(function(r){return r.json();}); }
+function rest(p){ return fetch(SB+"/rest/v1/"+p,{headers:{apikey:ANON,Authorization:"Bearer "+ANON}}).then(function(r){return r.json();}); }
+function SP(d){ return SPORTS[d]||{label:d,initials:d.slice(0,2).toUpperCase(),colour:"#666",parent:"",replica:null}; }
+
+/* ── boot ─────────────────────────────────────────────────── */
+function boot(){
+  if(!ORG){ document.getElementById("orgSub").textContent="No organisation in the link — add ?org=1"; return; }
+  fn({action:"list_org",org_id:ORG}).then(function(r){
+    if(!r||!r.ok){ document.getElementById("orgSub").textContent=(r&&r.error)||"Could not open this organisation."; return; }
+    S.org=r.org; S.shape=r.disciplines||[]; S.all=r.all_disciplines||[];
+    document.getElementById("orgName").textContent=S.org.name;
+    document.title=S.org.name;
+    try{ localStorage.setItem("plat_org_name_"+ORG,S.org.name); }catch(e){}
+    var live=S.shape.map(function(x){return SP(x.discipline).label;});
+    document.getElementById("orgSub").textContent = live.length
+      ? (live.join(" · ")+" — one register, one rating per sport")
+      : "No sports switched on yet — open Club admin below.";
+    S.shape.forEach(function(x){ if(x.pool_id) S.pools[x.pool_id]=x.discipline; });
+    renderPlaques(); renderAdmin(); loadRows();
+  }).catch(function(){ document.getElementById("orgSub").textContent="Could not reach the club."; });
+}
+
+/* ── disciplines and their groups ─────────────────────────── */
+function renderPlaques(){
+  var host=document.getElementById("plaques");
+  if(!S.shape.length){ host.innerHTML=""; return; }
+  host.innerHTML=S.shape.map(function(x,i){
+    var s=SP(x.discipline), gs=x.groups||[];
+    // Club group first, then the rest A-Z. Pills are stacked one above the other and all the SAME width:
+    // a row of pills sized to their words made the front page look ragged and hard to scan.
+    var ordered=gs.slice().sort(function(a,b){
+      if(a.is_general!==b.is_general) return a.is_general ? -1 : 1;
+      return String(a.name).localeCompare(String(b.name));
+    });
+    var groups = ordered.length ? '<div style="padding:12px 15px 6px;display:flex;flex-direction:column;gap:8px">'
+      + ordered.map(function(g){
+          var col=g.colour||s.colour;
+          return '<button onclick="openGroup(\''+x.discipline+'\','+g.id+')" style="display:flex;align-items:center;justify-content:center;gap:8px;'
+            +'width:100%;background:'+col+';color:#fff;border:none;border-radius:99px;padding:11px 18px;'
+            +'font:700 14px var(--body);cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.18)">'
+            + (g.is_general ? '<span style="width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.92)"></span>' : '')
+            + esc(g.name) + '</button>';
+        }).join("")
+      + '</div>'
+      + (ordered[0] && ordered[0].is_general
+          ? '<div style="padding:0 16px 2px;font-size:11.5px;color:var(--ink-soft)">\u25cf '+esc(ordered[0].name)+' is open to the whole club</div>'
+          : '')
+      : '<div class="empty">No groups yet — switch the sport on in Club admin and it starts with a Club group.</div>';
+    return '<div class="plaque" style="--sport:'+s.colour+'">'
+      +'<button class="phead" aria-expanded="false"><span class="badge">'+s.initials+'</span>'
+      +'<span><span class="pname">'+esc(s.label)+'</span><span class="pmeta">'+gs.length+' group'+(gs.length===1?"":"s")+' · rated by '+s.parent+'</span></span>'
+      +'<span class="chev">›</span></button>'
+      +'<div class="passage"><div><div class="pinner">'+groups
+      +'<div class="ptools">'
+      +'<button class="tool" '+(s.replica&&x.pool_id?'':'disabled ')+'onclick="openLedger(\''+x.discipline+'\','+(x.pool_id||0)+')">'+esc(s.label)+' ledger — every group, one rating each</button>'
+      +'</div></div></div></div></div>';
+  }).join("");
+  Array.prototype.forEach.call(document.querySelectorAll(".phead"),function(b){
+    b.addEventListener("click",function(){ var p=b.parentElement, o=p.classList.toggle("open"); b.setAttribute("aria-expanded",o); });
+  });
+}
+function groupsOf(d){ var x=S.shape.find(function(y){return y.discipline===d;}); return x?(x.groups||[]):[]; }
+function openGroup(d,gid){
+  var s=SP(d);
+  if(!s.replica){ alert(s.label+" is switched on, but its app is not wired yet. Padel is live today; the others follow."); return; }
+  location.href=s.replica+"?club="+gid;
+}
+// a plaque opens the sport's ledger AT that member, using the parent's own profile screen
+function openPlayer(d,poolId,name,gender){
+  var s=SP(d); if(!s.replica||!poolId) return;
+  location.href=s.replica+"?club=0&pool="+poolId+"&player="+encodeURIComponent(name)+"&g="+(gender||"M");
+}
+function openLedger(d,poolId){ var s=SP(d); if(!s.replica||!poolId) return; location.href=s.replica+"?club=0&pool="+poolId; }
+/* ── around the club: every group of every switched-on sport ─ */
+function loadRows(){
+  var ids=Object.keys(S.pools); var host=document.getElementById("rows");
+  if(!ids.length){ host.innerHTML='<div class="empty" style="padding:0">Nothing played yet.</div>'; return; }
+  Promise.all([
+    rest("plat_matches?pool_id=in.("+ids.join(",")+")&select=id,club_id,discipline,match_date,match_type,event,t1p1,t1p2,t2p1,t2p2,t1_sets,t2_sets,t1_games,t2_games,ends,peel,set_scores,display_t1,display_t2&order=match_date.desc,id.desc&limit=10"),
+    rest("plat_clubs?pool_id=in.("+ids.join(",")+")&select=id,name,colour")
+  ]).then(function(res){
+    var ms=Array.isArray(res[0])?res[0]:[], gs=Array.isArray(res[1])?res[1]:[];
+    var gById={}; gs.forEach(function(g){ gById[g.id]=g; });
+    if(!ms.length){ host.innerHTML='<div class="empty" style="padding:0">Nothing played yet.</div>'; return; }
+    S.rows=ms; S.gById=gById;
+    host.innerHTML=ms.map(function(m,i){
+      var s=SP(m.discipline), g=gById[m.club_id]||{name:"",colour:s.colour};
+      var side=function(a,b){ var out=[a,b].filter(function(v){ return v && String(v).toLowerCase()!=="null"; }); return esc(out.join(" & ")); };
+      var who=(m.display_t1?esc(m.display_t1):side(m.t1p1,m.t1p2))+' <span style="color:var(--ink-soft)">v</span> '+(m.display_t2?esc(m.display_t2):side(m.t2p1,m.t2p2));
+      var score=(m.discipline==="bowls") ? ((m.t1_games||0)+"–"+(m.t2_games||0)) : ((m.t1_sets||0)+"–"+(m.t2_sets||0));
+      var ev=(m.event||"").trim(); var tag=(ev&&ev.toLowerCase()!=="social")?(' · '+esc(ev)):"";
+      return '<div class="row" style="--sport:'+(g.colour||s.colour)+';cursor:pointer;display:block" onclick="toggleRow('+i+')">'
+        +'<div style="display:flex;align-items:flex-start;gap:11px"><span style="flex:1;min-width:0">'
+        +'<span class="rwho">'+who+'</span>'
+        +'<span class="rwhen"><span class="gpill">'+esc(g.name)+'</span>'+esc(s.label)+' · '+esc(m.match_date||"")+tag
+        +'<span class="rcar" id="rc'+i+'">\u25bc</span></span></span>'
+        +'<span class="rscore">'+score+'</span></div>'
+        +'<div class="rdet" id="rd'+i+'"></div></div>';
+    }).join("");
+  }).catch(function(){ host.innerHTML='<div class="empty" style="padding:0">Could not load recent matches.</div>'; });
+}
+
+function toggleRow(i){
+  var d=document.getElementById("rd"+i), c=document.getElementById("rc"+i), m=(S.rows||[])[i];
+  if(!d||!m) return;
+  if(d.style.display==="block"){ d.style.display="none"; if(c) c.textContent="\u25bc"; return; }
+  var s=SP(m.discipline);
+  var ss=(m.set_scores||"").trim();
+  var pills=ss ? ss.split(",").map(function(x){return x.trim();}).filter(Boolean)
+                   .map(function(sc){ return '<span class="spill">'+esc(sc.replace("-","/"))+'</span>'; }).join("")
+               : '<span class="rtot">Game scores not recorded for this match</span>';
+  var line=(m.discipline==="bowls")
+    ? ("Shots: "+(m.t1_games||0)+"\u2013"+(m.t2_games||0)+(m.ends?("  \u00b7  Ends: "+m.ends):"")+(m.peel?"  \u00b7  peel":""))
+    : ("Sets: "+(m.t1_sets||0)+"\u2013"+(m.t2_sets||0)+"  \u00b7  Games: "+(m.t1_games||0)+"\u2013"+(m.t2_games||0));
+  d.innerHTML=pills+'<div class="rtot">'+esc(m.match_type||"")+(m.match_type?"  \u00b7  ":"")+line+'</div>';
+  d.style.display="block"; if(c) c.textContent="\u25b2";
+}
+
+/* ── club admin ───────────────────────────────────────────── */
+function renderAdmin(){
+  // h9: the front page only ever holds the quiet link; everything else is drawn on the admin screen.
+  var front=document.getElementById("adminBox");
+  front.innerHTML='<div style="text-align:center;margin:22px 0 6px">'
+    +'<button class="btn ghost" style="width:auto;padding:9px 18px;font-size:13px;opacity:.85" onclick="showAdmin()">Club admin</button></div>';
+  var box=document.getElementById("adminBody");
+  var where=document.getElementById("adminWhere");
+  if(where) where.textContent=(S.org&&S.org.name)?S.org.name:"";
+  if(!S.adminOpen){ box.innerHTML=""; return; }
+  if(!S.role){
+    box.innerHTML='<div class="adm"><div class="atitle">Enter the club code</div>'
+      +'<div class="ahint">This is the club\'s own admin, above the individual groups. With the club code you can:'
+      +'<br>· switch a sport on or off for the whole club'
+      +'<br>· create a group inside a sport, with its own code and colour'
+      +'<br>· register a member once — they appear in a sport the first time they play it'
+      +'<br><br>Each group also has its own code, which opens only that group\'s board. The club code opens the club, and the ledger for any of its sports.</div>'
+      +'<div class="field"><input id="aPin" type="password" inputmode="numeric" placeholder="Club code"></div>'
+      +'<button class="btn" onclick="unlock()">Open admin</button><div class="msg" id="aMsg"></div></div>';
+    return;
+  }
+  var on={}; S.all.forEach(function(r){ on[r.discipline]=r.enabled; });
+  var h='<div class="adm"><div style="display:flex;justify-content:space-between;align-items:center">'
+    +'<div class="atitle">'+(S.role==="master"?"Master access":"Club access")+'</div>'
+    +'<button class="btn ghost" style="width:auto;margin:0;padding:6px 12px;font-size:12px" onclick="lock()">Lock</button></div>';
+  h+='<div class="label">Sports</div><div class="ahint" style="margin:0 0 4px">Switching a sport off hides it; nothing is deleted, and it returns exactly as it was.</div>';
+  Object.keys(SPORTS).forEach(function(d){
+    h+='<div class="tog"><div><b>'+esc(SPORTS[d].label)+'</b> <span class="rate">'+SPORTS[d].parent+(SPORTS[d].replica?"":" · not wired yet")+'</span></div>'
+      +'<button class="sw'+(on[d]?" on":"")+'" onclick="toggleSport(\''+d+'\','+(on[d]?"false":"true")+')"></button></div>';
+  });
+  h+='<div class="label">New group</div><div class="ahint" style="margin:0 0 6px">A group runs itself — its own code, colour, ladder and tournaments — and shares the sport\'s ratings with the other groups.</div>'
+    +'<div class="field"><select id="gDisc">'+S.shape.map(function(x){ return '<option value="'+x.discipline+'">'+esc(SP(x.discipline).label)+'</option>'; }).join("")+'</select></div>'
+    +'<div class="row2"><div class="field"><input id="gName" placeholder="Group name"></div><div class="field"><input id="gPin" inputmode="numeric" placeholder="Its code"></div></div>'
+    +'<div class="label" style="margin-top:6px">Group colour</div><div class="sws" id="gSws">'
+    +PALETTE.map(function(c,i){ return '<button class="swb" style="background:'+c+'" aria-pressed="'+(i===0)+'" onclick="pickCol(\''+c+'\')"></button>'; }).join("")+'</div>'
+    +'<button class="btn" onclick="newGroup()">Create group</button>';
+  h+='<div class="label">Add an individual</div><div class="ahint" style="margin:0 0 6px">One entry for the whole club. They appear in a sport the first time they play it, and start there on this rating.</div>'
+    +'<div class="field"><input id="mName" placeholder="Full name"></div>'
+    +'<div class="row2"><div class="field"><select id="mSex"><option value="M">Male</option><option value="F">Female</option></select></div>'
+    +'<div class="field"><input id="mSeed" type="number" placeholder="Rating (blank = 1500 / 1300)"></div></div>'
+    +'<div class="field"><input id="mPin" inputmode="numeric" placeholder="PIN (optional — not needed to enter scores)"></div>'
+    +'<button class="btn" onclick="newMember()">Add member</button>';
+  h+='<div class="label">Bulk add (paste from Excel)</div>'
+    +'<div class="ahint" style="margin:0 0 6px">One per line: <b>Name, Gender, Rating</b> — tabs or commas. Gender M or F. Rating optional; blank uses 1500 (M) / 1300 (F).</div>'
+    +'<textarea id="mBulk" style="width:100%;min-height:120px;font-family:ui-monospace,monospace;font-size:12.5px;padding:9px;border:1px solid var(--line);border-radius:var(--radius)" placeholder="John Smith, M, 1350&#10;Sarah Jones, F, 1180&#10;Mike Brown\tM\t1420"></textarea>'
+    +'<button class="btn" onclick="bulkMembers()">Add all pasted members</button>';
+  // groups: colour and the three-step teardown
+  var allG2=[]; S.shape.forEach(function(x){ (x.groups||[]).forEach(function(g){ allG2.push({id:g.id,name:g.name,colour:g.colour,d:x.discipline}); }); });
+  if(allG2.length){
+    h+='<div class="label">Groups</div>';
+    allG2.forEach(function(g){
+      h+='<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line-2)">'
+        +'<span style="width:14px;height:14px;border-radius:50%;background:'+(g.colour||SP(g.d).colour)+';flex:0 0 14px"></span>'
+        +'<span style="flex:1;min-width:0"><b>'+esc(g.name)+'</b> <span class="rate">'+esc(SP(g.d).label)+'</span></span>'
+        +'<button class="btn ghost" style="width:auto;margin:0;padding:6px 10px;font-size:12px" onclick="editGroup('+g.id+')">Edit</button>'
+        +'<button class="btn ghost" style="width:auto;margin:0;padding:6px 10px;font-size:12px;border-color:var(--bad);color:var(--bad)" onclick="tearDown('+g.id+')">Delete…</button></div>'
+        +'<div id="ed'+g.id+'"></div><div id="td'+g.id+'"></div>';
+    });
+  }
+  // the engine, as the standalone register's admin has
+  h+='<div class="label">Engine</div>'
+    +'<div class="ahint" style="margin:0 0 6px">Replays every match of a sport and rewrites its ratings. Entering a score recomputes by itself — this is for after a seed change or a restore.</div>';
+  S.shape.forEach(function(x){
+    var first=(x.groups||[])[0];
+    h+='<button class="btn ghost" style="margin-bottom:6px" '+(first?'':'disabled ')+'onclick="recompute(\''+x.discipline+'\','+(first?first.id:0)+')">Recompute '+esc(SP(x.discipline).label)+(first?'':' — no group yet')+'</button>';
+  });
+  h+='<div id="engMsg" class="msg"></div>';
+  h+='<div class="label">Safety net</div>'
+    +'<div class="ahint" style="margin:0 0 6px">A snapshot of a group is taken automatically just before its matches, its members or the group itself are removed — so a mistake can be put back even if nobody backed anything up.</div>'
+    +'<button class="btn ghost" onclick="showBackups()">Show snapshots</button><div id="bkList"></div>';
+  h+='<div class="label">Members ('+S.people.length+')</div><div id="people" class="people"></div>';
+  h+='<div class="msg" id="aMsg"></div></div>';
+  box.innerHTML=h;
+  renderPeople();
+}
+function renderPeople(){
+  var el=document.getElementById("people"); if(!el) return;
+  if(!S.people.length){ el.innerHTML='<div class="ahint">Nobody registered yet.</div>'; return; }
+  el.innerHTML=S.people.map(function(p){
+    var pills=(p.groups||[]).map(function(g){ return '<span class="pill" style="--pcol:'+(g.colour||SP(g.discipline).colour)+'">'+esc(g.name)+'</span>'; }).join("");
+    var rats=Object.keys(p.ratings||{}).map(function(d){ var r=p.ratings[d]; return SP(d).label+" "+Math.round(r.current_rating!=null?r.current_rating:r.seed); }).join(" · ");
+    if(!rats && p.default_seed!=null) rats="starts on "+Math.round(p.default_seed);
+    return '<div class="prow"><div style="flex:1;min-width:0"><div style="font-weight:600;font-size:14px">'+esc(p.full_name)+'</div>'
+      +'<div>'+(pills||'<span class="rate">no group yet</span>')+'</div>'
+      +(rats?'<div class="rate" style="margin-top:3px">'+esc(rats)+'</div>':'')+'</div>'
+      +'<button class="btn ghost" style="width:auto;margin:0;padding:6px 10px;font-size:12px" onclick="addToGroup('+p.id+')">Add to group</button></div>';
+  }).join("");
+}
+function recompute(disc,clubId){
+  var m=document.getElementById("engMsg"); if(!clubId){ m.style.color="var(--bad)"; m.textContent="Create a group first."; return; }
+  m.style.color="var(--ink-soft)"; m.textContent="Recomputing "+SP(disc).label+" — this can take a few seconds…";
+  fn({action:"recompute",discipline:disc,club_id:clubId,admin_pin:S.admin}).then(function(r){
+    if(!r||!r.ok){ m.style.color="var(--bad)"; m.textContent=(r&&r.error)||"Failed."; return; }
+    var e=r.engine||{};
+    m.style.color="var(--ok)"; m.textContent=SP(disc).label+" recomputed — "+(e.players||0)+" players, "+(e.moves||0)+" matches.";
+    loadPeople().then(renderAdmin);
+  });
+}
+/* ---- edit a group in place: its name, its colour, its own code ---- */
+var PALETTE=["#6c3483","#1f7a8c","#b5651d","#2e7d32","#c2185b","#455a64","#8e24aa","#00695c","#ad1457","#4e342e","#283593","#827717"];
+var EDCOL={};
+function editGroup(id){
+  var host=document.getElementById("ed"+id); if(!host) return;
+  if(host.innerHTML){ host.innerHTML=""; return; }
+  var g=null; S.shape.forEach(function(x){ (x.groups||[]).forEach(function(y){ if(y.id===id) g=y; }); }); if(!g) return;
+  EDCOL[id]=g.colour||PALETTE[0];
+  host.innerHTML='<div style="margin:6px 0 10px;padding:10px 12px;background:#fff;border:1px solid var(--line);border-radius:var(--radius)">'
+    +'<div class="label" style="margin-top:0">Name</div><div class="field"><input id="edN'+id+'" value="'+esc(g.name)+'"></div>'
+    +'<div class="label">Its code</div><div class="field"><input id="edP'+id+'" inputmode="numeric" placeholder="leave blank to keep the current code"></div>'
+    +'<div class="label">Colour</div><div class="sws" id="edS'+id+'">'
+    +PALETTE.map(function(c){ return '<button class="swb" style="background:'+c+'" aria-pressed="'+(c===EDCOL[id])+'" onclick="pickEdit('+id+',\''+c+'\')"></button>'; }).join("")
+    +'</div><button class="btn" onclick="saveGroup('+id+')">Save</button><div class="msg" id="edM'+id+'"></div></div>';
+}
+function pickEdit(id,c){
+  EDCOL[id]=c;
+  Array.prototype.forEach.call(document.querySelectorAll("#edS"+id+" .swb"),function(b){
+    b.setAttribute("aria-pressed", b.style.backgroundColor===hexToRgb(c)||b.style.background===c); });
+}
+function saveGroup(id){
+  var m=document.getElementById("edM"+id);
+  var name=(document.getElementById("edN"+id).value||"").trim();
+  var pin=(document.getElementById("edP"+id).value||"").trim();
+  if(!name){ m.style.color="var(--bad)"; m.textContent="Name required."; return; }
+  m.style.color="var(--ink-soft)"; m.textContent="Saving…";
+  var jobs=[ fn({action:"rename_club",club_id:id,admin_pin:S.admin,name:name}),
+             fn({action:"set_club_colour",club_id:id,admin_pin:S.admin,colour:EDCOL[id]}) ];
+  if(pin) jobs.push(fn({action:"set_club_pin",club_id:id,admin_pin:S.admin,new_pin:pin}));
+  Promise.all(jobs).then(function(rs){
+    var bad=rs.find(function(r){ return !r||!r.ok; });
+    if(bad){ m.style.color="var(--bad)"; m.textContent=(bad&&bad.error)||"Failed."; return; }
+    refreshShape().then(function(){ renderAdmin(); say("Saved "+name+".",true); });
+  });
+}
+/* ---- three-step teardown, same ladder and same gating as the ledger ---- */
+function tearDown(id){
+  var host=document.getElementById("td"+id); if(!host) return;
+  if(host.innerHTML){ host.innerHTML=""; return; }
+  host.innerHTML='<div class="ahint">Loading…</div>';
+  fn({action:"club_counts",club_id:id,admin_pin:S.admin}).then(function(r){
+    if(!r||!r.ok){ host.innerHTML='<div class="ahint" style="color:var(--bad)">'+esc((r&&r.error)||"Could not read the group.")+'</div>'; return; }
+    var step=function(n,label,sub,on){ return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0">'
+      +'<span style="width:20px;height:20px;border-radius:50%;background:'+(on?"var(--bad)":"#ddd")+';color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:0 0 20px">'+n+'</span>'
+      +'<span style="flex:1"><span style="font-weight:600;font-size:13px;color:'+(on?"var(--ink)":"#999")+'">'+label+'</span><br><span class="rate">'+sub+'</span></span>'
+      +'<button '+(on?'':'disabled ')+'class="btn ghost" style="width:auto;margin:0;padding:5px 10px;font-size:12px;border-color:'+(on?"var(--bad)":"#ddd")+';color:'+(on?"var(--bad)":"#bbb")+'" '
+      +(on?'onclick="tdStep('+id+','+n+')"':'')+'>Delete</button></div>'; };
+    host.innerHTML='<div style="margin:6px 0 10px;padding:10px 12px;background:#fff;border:1px solid #f0d6d6;border-radius:var(--radius)">'
+      +'<div class="ahint" style="color:#8a6d1a;background:#fff8e1;border:1px solid #f0e0a8;border-radius:8px;padding:7px 9px;margin:0 0 8px">⚠ A snapshot is taken first, so this can be put back — but check the numbers before you go on.</div>'
+      +step(1,"Matches ("+r.matches+")","every match played here, and the pairs they created", r.matches>0)
+      +step(2,"Members ("+r.members+")","unlinks everyone; people with no other group and no history leave the register", r.matches===0&&r.members>0)
+      +step(3,"The group itself","ladders, tournaments and the group row", r.matches===0&&r.members===0)
+      +'<div id="tdMsg'+id+'" class="msg"></div></div>';
+  });
+}
+function tdStep(id,n){
+  var g=null; S.shape.forEach(function(x){ (x.groups||[]).forEach(function(y){ if(y.id===id) g=y; }); }); if(!g) return;
+  var typed=prompt("Delete "+(n===1?("every match at "+g.name):(n===2?("every membership of "+g.name):(g.name+" itself")))+"?\n\nA snapshot is kept, so this can be put back.\n\nType the group name exactly to confirm:","");
+  if(typed==null) return;
+  var m=document.getElementById("tdMsg"+id); m.style.color="var(--ink-soft)"; m.textContent="Working…";
+  var act=(n===1?"clear_club_matches":(n===2?"clear_club_members":"remove_club"));
+  fn({action:act,club_id:id,admin_pin:S.admin,confirm_name:typed}).then(function(r){
+    if(!r||!r.ok){ m.style.color="var(--bad)"; m.textContent=(r&&r.error)||"Failed."; return; }
+    var note=(n===1)?("Removed "+r.matches_removed+" matches and "+r.pairs_removed+" pairs.")
+            :(n===2)?("Unlinked "+r.unlinked+"; "+r.people_removed+" left the register.")
+            :("Removed "+r.removed+".");
+    refreshShape().then(function(){ loadPeople().then(function(){ renderAdmin();
+      var mm=document.getElementById("aMsg"); if(mm){ mm.style.color="var(--ok)"; mm.textContent=note; } }); });
+  });
+}
+/* ---- the safety net ---- */
+function showBackups(){
+  var host=document.getElementById("bkList"); if(!host) return;
+  if(host.innerHTML){ host.innerHTML=""; return; }
+  host.innerHTML='<div class="ahint">Loading…</div>';
+  var pools=(S.shape||[]).map(function(x){return x.pool_id;}).filter(Boolean);
+  if(!pools.length){ host.innerHTML='<div class="ahint">No snapshots yet.</div>'; return; }
+  Promise.all(pools.map(function(p){ return fn({action:"list_backups",pool_id:p,admin_pin:S.admin}); })).then(function(rs){
+    var bs=[]; rs.forEach(function(r){ if(r&&r.ok) bs=bs.concat(r.backups||[]); });
+    bs.sort(function(a,b){ return String(b.created_at).localeCompare(String(a.created_at)); });
+    if(!bs.length){ host.innerHTML='<div class="ahint">No snapshots yet — one is taken the first time something is removed.</div>'; return; }
+    host.innerHTML=bs.map(function(b){ var c=b.counts||{};
+      return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line-2)">'
+        +'<div style="flex:1;min-width:0"><div style="font-weight:600;font-size:13px">'+esc(b.club_name||"")+'</div>'
+        +'<div class="rate">'+esc(b.reason||"")+' · '+esc(String(b.created_at||"").slice(0,16).replace("T"," "))+'</div>'
+        +'<div class="rate">'+(c.members||0)+' members · '+(c.pairs||0)+' pairs · '+(c.matches||0)+' matches</div></div>'
+        +'<button class="btn ghost" style="width:auto;margin:0;padding:5px 10px;font-size:12px" onclick="bkDownload('+b.id+')">Download</button>'
+        +'<button class="btn ghost" style="width:auto;margin:0;padding:5px 10px;font-size:12px;border-color:var(--ok);color:var(--ok)" onclick="bkRestore('+b.id+',\''+esc(b.club_name||"").replace(/'/g,"\\'")+'\')">Put back</button></div>'; }).join("");
+  });
+}
+function bkDownload(id){
+  say("Fetching…",true);
+  fn({action:"get_backup",backup_id:id,admin_pin:S.admin}).then(function(r){
+    if(!r||!r.ok) return say((r&&r.error)||"Failed.",false);
+    try{ var blob=new Blob([JSON.stringify(r.backup,null,2)],{type:"application/json"});
+      var a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+      a.download=(r.backup.club_name||"group").replace(/[^a-z0-9]+/gi,"-").toLowerCase()+"-"+String(r.backup.created_at||"").slice(0,10)+".json";
+      document.body.appendChild(a); a.click(); a.remove(); say("Downloaded — keep it somewhere safe.",true);
+    }catch(e){ say("Could not save the file.",false); }
+  });
+}
+function bkRestore(id,name){
+  if(!confirm("Put "+name+" back from this snapshot?\n\nNothing is deleted — anything missing is added back, then ratings are recomputed.")) return;
+  say("Restoring…",true);
+  fn({action:"restore_backup",backup_id:id,admin_pin:S.admin}).then(function(r){
+    if(!r||!r.ok) return say((r&&r.error)||"Failed.",false);
+    refreshShape().then(function(){ loadPeople().then(function(){ renderAdmin();
+      say("Put back "+r.club+" — "+r.members+" members, "+r.pairs_restored+" pairs, "+r.matches_restored+" matches.",true); }); });
+  });
+}
+function val(id){ var e=document.getElementById(id); return e?e.value.trim():""; }
+function say(t,good){ var m=document.getElementById("aMsg"); if(!m) return; m.style.color=good?"var(--ok)":"var(--bad)"; m.textContent=t; }
+function unlock(){
+  var p=val("aPin"); if(!p) return say("Enter the club code.",false);
+  say("Checking…",true);
+  fn({action:"check_org_pin",org_id:ORG,admin_pin:p}).then(function(r){
+    if(!r||!r.ok) return say((r&&r.error)||"Code not recognised.",false);
+    S.admin=p; S.role=r.role; loadPeople().then(renderAdmin);
+  });
+}
+function lock(){ S.admin=""; S.role=""; renderAdmin(); }
+/* One explanation, at club level. The group boards no longer each carry their own. */
+/* ---- the honour board: one member, a plaque per sport ---------------------------------------------- */
+var MEM=null, RANKS=null;
+function loadMembers(){
+  if(MEM) return Promise.resolve(MEM);
+  return fn({action:"org_register",org_id:ORG}).then(function(r){
+    MEM=((r&&r.players)||[]).slice().sort(function(a,b){ return a.full_name.localeCompare(b.full_name); });
+    RANKS={};
+    (S.shape||[]).forEach(function(x){
+      var d=x.discipline;
+      var played=MEM.filter(function(p){ return p.ratings && p.ratings[d] && p.ratings[d].current_rating!=null; })
+                    .sort(function(a,b){ return b.ratings[d].current_rating-a.ratings[d].current_rating; });
+      RANKS[d]={ total:played.length, of:{} };
+      played.forEach(function(p,i){ RANKS[d].of[p.id]=i+1; });
+    });
+    return MEM;
+  }).catch(function(){ MEM=[]; RANKS={}; return MEM; });
+}
+function showMembers(){
+  document.getElementById("membersWhere").textContent=(S.org&&S.org.name)||"";
+  document.getElementById("membersTitle").textContent="Members";
+  document.getElementById("membersScreen").style.display="block";
+  document.documentElement.style.overflow="hidden"; window.scrollTo(0,0);
+  document.getElementById("membersBody").innerHTML='<div class="ahint">Loading…</div>';
+  loadMembers().then(function(){ renderMemberList(""); });
+}
+function hideMembers(){
+  document.getElementById("membersScreen").style.display="none";
+  document.documentElement.style.overflow="";
+}
+function renderMemberList(q){
+  var b=document.getElementById("membersBody");
+  var list=MEM.filter(function(p){ return !q || p.full_name.toLowerCase().indexOf(q.toLowerCase())>=0; });
+  b.innerHTML='<div class="field"><input id="memQ" placeholder="Search a name…" value="'+esc(q)+'" oninput="renderMemberList(this.value)"></div>'
+    +'<div class="ahint">'+list.length+' member'+(list.length===1?"":"s")+' · tap a name to see their ratings</div>'
+    +list.map(function(p){
+        var played=(S.shape||[]).filter(function(x){ return p.ratings && p.ratings[x.discipline] && p.ratings[x.discipline].current_rating!=null; });
+        return '<div class="prow" onclick="showMember('+p.id+')" style="cursor:pointer">'
+          +'<div style="flex:1;min-width:0"><div style="font-weight:600;font-size:14px">'+esc(p.full_name)+'</div>'
+          +'<div>'+(played.length
+              ? played.map(function(x){ var s=SP(x.discipline);
+                  return '<span class="pill" style="--pcol:'+s.colour+'">'+esc(s.label)+' '+Math.round(p.ratings[x.discipline].current_rating)+'</span>'; }).join("")
+              : '<span class="rate">not played yet</span>')+'</div></div>'
+          +'<span class="rate">&rsaquo;</span></div>';
+      }).join("");
+  var i=document.getElementById("memQ"); if(i && q){ i.focus(); try{ i.setSelectionRange(q.length,q.length); }catch(e){} }
+}
+function showMember(id){
+  var p=MEM.find(function(x){ return x.id===id; }); if(!p) return;
+  document.getElementById("membersTitle").textContent=p.full_name;
+  var plaques=(S.shape||[]).map(function(x){
+    var d=x.discipline, s=SP(d), r=(p.ratings||{})[d];
+    if(!r || r.current_rating==null) return '';
+    var cur=Math.round(r.current_rating), seed=(r.seed!=null?Number(r.seed):null);
+    var mv=(seed!=null)?Math.round(r.current_rating-seed):null;
+    var rk=(RANKS[d]&&RANKS[d].of[p.id])||null, tot=(RANKS[d]&&RANKS[d].total)||0;
+    var groups=(p.groups||[]).filter(function(g){ return g.discipline===d; });
+    return '<div onclick="openPlayer(\''+d+'\','+(x.pool_id||0)+',\''+esc(p.full_name).replace(/'/g,"\\'")+'\',\''+(p.gender||"M")+'\')" style="cursor:pointer;background:linear-gradient(135deg,'+s.colour+','+s.colour+'dd);'
+      +'color:#fff;border-radius:var(--radius);padding:16px 18px;margin-bottom:12px;display:flex;align-items:center;gap:12px">'
+      +'<div style="flex:1;min-width:0"><div style="font-size:12px;letter-spacing:.14em;opacity:.85">'+esc(s.label.toUpperCase())+'</div>'
+      +'<div style="font-family:var(--display);font-weight:700;font-size:30px;line-height:1.1">'+cur+'</div>'
+      +'<div style="margin-top:4px">'+groups.map(function(g){ return '<span style="display:inline-block;background:'+(g.colour||"rgba(255,255,255,.2)")+';border:1.5px solid rgba(255,255,255,.85);border-radius:99px;padding:1px 8px;font-size:10px;font-weight:700;margin:2px 4px 0 0">'+esc(g.name)+'</span>'; }).join("")+'</div></div>'
+      +'<div style="text-align:right;font-size:13px;line-height:1.7;white-space:nowrap">'
+      +'<div>level '+(Math.round(cur/200*10)/10).toFixed(1)+'</div>'
+      +(mv!=null?('<div>move <b style="color:'+(mv>=0?"#c4e000":"#ffb4a2")+'">'+(mv>0?"+":"")+mv+'</b></div>'):'')
+      +(rk?('<div>rank '+rk+' / '+tot+' &rsaquo;</div>'):'')
+      +'</div></div>';
+  }).join("");
+  document.getElementById("membersBody").innerHTML=
+    '<button class="btn ghost" style="width:auto;padding:7px 14px;font-size:12.5px;margin-bottom:12px" onclick="showMembers()">&lsaquo; All members</button>'
+    +'<div class="adm"><div class="atitle">'+esc(p.full_name)+'</div>'
+    +'<div class="ahint">Their rating in each sport they play. Tap one to open that sport and see the full record.</div>'
+    +(plaques||'<div class="ahint">No matches yet — they appear here the first time they play.</div>')+'</div>';
+  window.scrollTo(0,0);
+}
+function showAbout(){
+  var org=(S.org&&S.org.name)||"This club";
+  document.getElementById("aboutWhere").textContent=org;
+  var live=(S.shape||[]).map(function(x){ return SP(x.discipline); });
+  document.getElementById("aboutBody").innerHTML=
+    '<div class="adm"><div class="atitle">'+esc(org)+'</div>'
+    +'<div class="ahint">One club, one register of members, and a separate rating for each sport.</div>'
+    +'<div class="label">How it fits together</div>'
+    +'<div class="ahint"><b>The club</b> holds the register: a member is entered once, whatever they play.<br><br>'
+    +'<b>A sport</b> is where ratings live. One rating per person per sport — play in any group and the same number moves.<br><br>'
+    +'<b>A group</b> is a set of people who play together: a morning, a league, a section. Each runs itself, with its own board, ladder and tournaments. Every sport begins with a <b>Club group</b>, open to the whole club, and the other groups grow out of it.</div>'
+    +'<div class="label">What rates the matches</div>'
+    +'<div class="ahint">Each sport is rated by the engine built for it, unchanged:</div>'
+    +live.map(function(s){ return '<div class="tog"><div><b>'+esc(s.label)+'</b></div>'
+        +'<span class="pill" style="--pcol:'+s.colour+'">'+esc(s.parent)+'</span></div>'; }).join("")
+    +'<div class="ahint" style="margin-top:8px">A rating moves on who you beat and by how much, not on wins alone: beating a stronger side moves it further than beating a weaker one, and a close loss costs less than a heavy one. Every result in the sport is replayed from the start, so a rating is the whole record rather than the last match.</div>'
+    +'<div class="label">Where to look</div>'
+    +'<div class="ahint"><b>A group</b> — its own board: its ladders, its pairs, its matches.<br>'
+    +'<b>The ledger</b> — the sport across every group: one rating each, and everyone who has played.<br>'
+    +'<b>Club admin</b> — the register, the groups and the club\'s settings.</div>'
+    +'<div class="ahint" style="margin-top:12px;opacity:.7">Powered by OPR · opr-online.com</div></div>';
+  document.getElementById("aboutScreen").style.display="block";
+  document.documentElement.style.overflow="hidden"; window.scrollTo(0,0);
+}
+function hideAbout(){
+  document.getElementById("aboutScreen").style.display="none";
+  document.documentElement.style.overflow="";
+}
+function showAdmin(){
+  S.adminOpen=true; renderAdmin();
+  document.getElementById("adminScreen").style.display="block";
+  document.documentElement.style.overflow="hidden"; window.scrollTo(0,0);
+  var p=document.getElementById("aPin"); if(p) p.focus();
+}
+function hideAdmin(){
+  S.adminOpen=false; S.admin=""; S.role=""; renderAdmin();
+  document.getElementById("adminScreen").style.display="none";
+  document.documentElement.style.overflow="";
+}
+function loadPeople(){
+  return fn({action:"org_register",org_id:ORG}).then(function(r){
+    S.people=(r&&r.players)||[]; S.groups=(r&&r.groups)||[]; return true;
+  }).catch(function(){ return true; });
+}
+function refreshShape(){ return fn({action:"list_org",org_id:ORG}).then(function(r){
+  if(r&&r.ok){ S.shape=r.disciplines||[]; S.all=r.all_disciplines||[]; S.pools={}; S.shape.forEach(function(x){ if(x.pool_id) S.pools[x.pool_id]=x.discipline; }); renderPlaques(); loadRows(); } }); }
+function toggleSport(d,on){
+  say((on?"Switching on ":"Switching off ")+SP(d).label+"…",true);
+  fn({action:"set_org_disciplines",org_id:ORG,admin_pin:S.admin,discipline:d,on:on}).then(function(r){
+    if(!r||!r.ok) return say((r&&r.error)||"Failed.",false);
+    refreshShape().then(function(){ renderAdmin(); say(SP(d).label+(on?" is on.":" is off — its history is kept."),true); });
+  });
+}
+function pickCol(c){ S.newCol=c; Array.prototype.forEach.call(document.querySelectorAll("#gSws .swb"),function(b){ b.setAttribute("aria-pressed", b.style.backgroundColor===hexToRgb(c) || b.style.background===c); }); }
+function hexToRgb(h){ var n=parseInt(h.slice(1),16); return "rgb("+((n>>16)&255)+", "+((n>>8)&255)+", "+(n&255)+")"; }
+function newGroup(){
+  var d=val("gDisc"), n=val("gName"); if(!n) return say("Group name required.",false);
+  say("Creating…",true);
+  fn({action:"add_group",org_id:ORG,admin_pin:S.admin,discipline:d,name:n,admin_pin_new:val("gPin"),colour:S.newCol}).then(function(r){
+    if(!r||!r.ok) return say((r&&r.error)||"Failed.",false);
+    refreshShape().then(function(){ renderAdmin(); say("Created "+n+".",true); });
+  });
+}
+function newMember(){
+  var n=val("mName"); if(!n) return say("Name required.",false);
+  say("Adding…",true);
+  fn({action:"add_org_member",org_id:ORG,admin_pin:S.admin,full_name:n,gender:val("mSex"),seed:val("mSeed"),pin:val("mPin")}).then(function(r){
+    if(!r||!r.ok) return say((r&&r.error)||"Failed.",false);
+    loadPeople().then(function(){ renderAdmin();
+      say(r.linked ? (n+" is already in the register.") : ("Added "+n+" — they join a group the first time they play."), true); });
+  });
+}
+function bulkMembers(){
+  var raw=(document.getElementById("mBulk")||{}).value||"";
+  var lines=raw.split("\n").map(function(l){return l.trim();}).filter(function(l){return l.length;});
+  if(!lines.length) return say("Paste some rows first.",false);
+  var rows=[], bad=[];
+  lines.forEach(function(l,i){
+    var p=l.split(/\t|,/).map(function(x){return x.trim();});
+    var name=p[0], g=(p[1]||"").toUpperCase().charAt(0), rate=p[2];
+    if(!name||(g!=="M"&&g!=="F")){ bad.push("Line "+(i+1)+": need Name, Gender (M/F)"); return; }
+    rows.push({full_name:name,gender:g,rating:rate});
+  });
+  if(bad.length) return say(bad[0],false);
+  say("Adding "+rows.length+"…",true);
+  fn({action:"bulk_add_org_members",org_id:ORG,admin_pin:S.admin,rows:rows}).then(function(r){
+    if(!r||!r.ok) return say((r&&r.error)||"Failed.",false);
+    document.getElementById("mBulk").value="";
+    loadPeople().then(function(){ renderAdmin();
+      say("Added "+r.added+(r.already_there?(" · "+r.already_there+" already in the register"):"")+((r.failed&&r.failed.length)?(" · skipped "+r.failed.join(", ")):""), true); });
+  });
+}
+function addToGroup(iid){
+  var p=S.people.find(function(x){return x.id===iid;}); if(!p) return;
+  var all=[]; S.shape.forEach(function(x){ (x.groups||[]).forEach(function(g){ all.push({id:g.id,name:g.name,d:x.discipline}); }); });
+  if(!all.length) return say("Create a group first.",false);
+  var list=all.map(function(g,i){ return (i+1)+"  "+g.name+"  ("+SP(g.d).label+")"; }).join("\n");
+  var pick=prompt("Add "+p.full_name+" to which group?\n\n"+list+"\n\nType the number:","1");
+  var n=parseInt(pick,10); if(!n||n<1||n>all.length) return;
+  var g=all[n-1];
+  say("Adding…",true);
+  fn({action:"add_membership",club_id:g.id,admin_pin:S.admin,individual_id:iid}).then(function(r){
+    if(!r||!r.ok) return say((r&&r.error)||"Failed.",false);
+    loadPeople().then(function(){ renderAdmin(); say(p.full_name+" joined "+g.name+".",true); });
+  });
+}
+/* installable: the icon opens THIS organisation */
+(function(){ try{
+  var nm=""; try{ nm=localStorage.getItem("plat_org_name_"+ORG)||""; }catch(e){}
+  var url="./hub.html?org="+ORG;
+  // each app is scoped to its OWN page. With scope "./" every app covered the whole folder, so once one was
+  // installed Chrome reported "already installed" for all the others.
+  var mf={id:url,name:nm||"Club",short_name:(nm||"Club").slice(0,12),start_url:url,scope:"./hub.html",display:"standalone",
+          background_color:"#16243D",theme_color:"#16243D",
+          icons:[{src:"./icon-192.png",sizes:"192x192",type:"image/png"},{src:"./icon-512.png",sizes:"512x512",type:"image/png"}]};
+  var l=document.createElement("link"); l.rel="manifest";
+  l.href="data:application/manifest+json,"+encodeURIComponent(JSON.stringify(mf));
+  document.head.appendChild(l);
+}catch(e){} })();
+(function(){ if(!/[?&]build=1/.test(location.search)) return;   // a debugging aid, not something a member should see
+  var t=document.createElement("div"); t.textContent="HUB h23";
+  t.style.cssText="position:fixed;top:0;right:0;z-index:99999;background:rgba(0,0,0,.62);color:#fff;font:700 10px/1.4 system-ui,sans-serif;letter-spacing:.4px;padding:3px 8px;border-bottom-left-radius:8px;pointer-events:none";
+  document.body.appendChild(t); })();
+boot();
+</script>
+</body>
+</html>
